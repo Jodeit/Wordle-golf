@@ -148,7 +148,7 @@ function renderScorecard() {
       if (strokes < hole.par) el.classList.add('under');
       if (strokes > hole.par) el.classList.add('over');
     }
-    el.innerHTML = `${hole.number}<span class="sc-score">${score}</span>par ${hole.par}`;
+    el.innerHTML = `${hole.number}<span class="sc-score">${score}</span><span class="sc-par">par ${hole.par}</span>`;
     card.appendChild(el);
   });
 }

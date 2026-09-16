@@ -100,6 +100,17 @@ shot model, share-card round-tripping and tamper rejection.
 | `js/leaderboard.js` | Local storage, share cards, importing |
 | `js/app.js` | UI glue |
 
+## Screens
+
+Phone-first: the stacked layout is the base, and a two-column layout kicks in
+at 700px of width. Verified with nothing off-screen and no page scrolling on
+small phones (375x667), tall phones (393x852), landscape phones (852x393),
+tablets and desktop. Landscape phones need the two-column layout more than
+desktops do — stacked, the keyboard falls off the bottom of the screen.
+
+The on-screen keyboard is always there, and a physical keyboard works
+everywhere too.
+
 ## Known limits
 
 - The answer bank is ~950 hand-picked words with ~2,500 legal guesses. It's
