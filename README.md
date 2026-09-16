@@ -79,6 +79,10 @@ open http://localhost:8000
 It's ES modules, so it needs to be served over http — opening the file
 directly with `file://` won't work.
 
+> The answer list seeds course generation. Changing its contents or its order
+> repoints every course code that has already been shared, so the tests pin
+> both, along with the nine holes that code `7KQ2F` produces.
+
 ## Tests
 
 ```sh
@@ -92,7 +96,7 @@ shot model, share-card round-tripping and tamper rejection.
 
 | File | What's in it |
 | --- | --- |
-| `js/words.js` | Answer bank and the wider list of legal guesses |
+| `js/words.js` | Answer bank (seeds courses — do not edit) and legal guesses |
 | `js/course.js` | Seeded RNG, par ratings, course names, hole geometry |
 | `js/game.js` | Wordle marking, golf scoring, the shot model |
 | `js/hole-view.js` | The overhead hole renderer |
@@ -113,9 +117,12 @@ everywhere too.
 
 ## Known limits
 
-- The answer bank is ~950 hand-picked words with ~2,500 legal guesses. It's
-  generous but not a full dictionary, so a real word will occasionally be
-  turned away.
+- Answers come from ~950 hand-picked ordinary words, so no hole is ever an
+  obscurity. Guesses are checked against a full English dictionary (~12,650
+  five-letter words, comparable to Wordle's own guess list).
+- That dictionary accepts crude words as guesses, the same way Wordle does.
+  They can never be answers, and the game never shows them back to you — but
+  they won't be rejected if typed.
 - Par comes from letter statistics, not from how people actually score. It
   ranks words sensibly, but it isn't calibrated against real play data.
 - Leaderboards and in-progress rounds live in `localStorage` — they're

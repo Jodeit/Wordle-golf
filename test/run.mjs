@@ -1,7 +1,7 @@
 // Logic tests. No framework, no install: `node test/run.mjs`.
 
 import { buildCourse, rateWord, normalizeCode, fairwayHalfWidth } from '../js/course.js';
-import { ANSWERS, isValidGuess } from '../js/words.js';
+import { ANSWERS, ALLOWED, isValidGuess } from '../js/words.js';
 import { scoreGuess, shotFor, knowledgeFrom, scoreEmoji, strokesFromEmoji, BLOWUP_STROKES } from '../js/game.js';
 import { buildShareCard, parseShareCard } from '../js/leaderboard.js';
 
@@ -96,7 +96,25 @@ check('popular openers are legal guesses',
   ['stare', 'learn', 'crane', 'slate', 'adieu', 'audio', 'raise', 'arose', 'tears'].every(isValidGuess));
 check('everyday words are legal guesses',
   ['vodka', 'pizza', 'mould', 'jumps', 'happy'].every(isValidGuess));
-check('nonsense is rejected', !isValidGuess('qqqqq') && !isValidGuess('zxcvb'));
+// Words that a hand-written list had been turning away.
+check('ordinary words are legal guesses',
+  ['clone', 'filed', 'liner', 'grime', 'slant', 'porch', 'wedge', 'tonic', 'miner',
+   'baled', 'toned', 'riled', 'paler', 'cored', 'sated'].every(isValidGuess));
+check('the guess list is dictionary-sized', ALLOWED.size > 10000, `only ${ALLOWED.size}`);
+check('nonsense is rejected',
+  !isValidGuess('qqqqq') && !isValidGuess('zxcvb') && !isValidGuess('abcde'));
+
+// The answer pool seeds course generation: change its contents or its order and
+// every course code already shared silently repoints to different words.
+eq('the answer pool is unchanged', ANSWERS.length, 945);
+eq('the answer pool order is unchanged',
+  `${ANSWERS[0]}/${ANSWERS[472]}/${ANSWERS[944]}`, 'about/model/zebra');
+check('every answer is also a legal guess', ANSWERS.every(isValidGuess));
+
+// A known course, pinned. If this moves, shared codes have broken.
+eq('course 7KQ2F still plays the same nine',
+  buildCourse('7KQ2F').holes.map((h) => h.word).join(','),
+  'favor,alarm,stake,happy,humor,anger,spray,event,gleam');
 
 // ------------------------------------------------------------- share cards
 
