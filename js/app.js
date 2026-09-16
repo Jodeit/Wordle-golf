@@ -379,6 +379,7 @@ function showPreview(course) {
 function openStart(code) {
   $('input-name').value = store.getPlayerName();
   showPreview(buildCourse(code || randomCourseCode()));
+  $('btn-start-close').hidden = !state.round;
   openModal('modal-start');
 }
 

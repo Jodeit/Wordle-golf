@@ -4,8 +4,8 @@
 :root {
   --ink: #f2f7f2;
   --ink-dim: #b9cbbe;
-  --glass: rgba(10, 20, 13, 0.62);
-  --glass-solid: rgba(10, 20, 13, 0.86);
+  --glass: rgba(10, 20, 13, 0.46);
+  --glass-solid: rgba(10, 20, 13, 0.72);
   --glass-line: rgba(255, 255, 255, 0.14);
   --green: #4fa356;
   --yellow: #c9a227;
@@ -15,7 +15,16 @@
   --bad: #e07a63;
   --radius: 14px;
   --font: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
-  --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
+
+  /* Modals sit on solid ground rather than the glass over the course scene,
+     so they stay legible however busy the fairway behind them gets. */
+  --panel: #16281a;
+  --panel-2: #1e3423;
+  --line: rgba(255, 255, 255, 0.12);
+  --text: var(--ink);
+  --dim: var(--ink-dim);
+  --bg: #0c1710;
 }
 
 * { box-sizing: border-box; }
@@ -306,8 +315,8 @@ main {
 
 .key {
   flex: 1;
-  max-width: 40px;
-  height: 46px;
+  max-width: 44px;
+  height: 50px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -320,7 +329,7 @@ main {
   user-select: none;
 }
 
-.key.wide { max-width: 62px; font-size: 11px; }
+.key.wide { max-width: 68px; font-size: 11px; }
 .key:active { transform: translateY(1px); }
 .key.correct { background: var(--green); }
 .key.present { background: var(--yellow); }
@@ -618,7 +627,7 @@ button.primary:active, button.ghost:active { transform: translateY(1px); }
 @media (min-width: 700px) {
   main {
     display: grid;
-    grid-template-columns: 1fr minmax(330px, 390px);
+    grid-template-columns: 1fr minmax(380px, 460px);
     grid-template-rows: auto 1fr;
     align-items: start;
     gap: 12px;
@@ -629,6 +638,8 @@ button.primary:active, button.ghost:active { transform: translateY(1px); }
   .readout { grid-column: 1; grid-row: 2; align-self: end; padding-bottom: 6px; }
   .play-panel { grid-column: 2; grid-row: 1 / 3; }
   #minimap { width: 104px; height: 142px; }
+  .key { max-width: 52px; height: 56px; font-size: 15px; }
+  .key.wide { max-width: 80px; font-size: 12px; }
 }
 
 @media (min-width: 700px) and (min-height: 620px) {
