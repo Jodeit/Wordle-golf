@@ -60,6 +60,12 @@ function renderHeader() {
   $('course-code').textContent = state.course.code;
 }
 
+function applyNotesSetting(on) {
+  document.body.classList.toggle('no-notes', !on);
+  const box = $('toggle-notes');
+  if (box) box.checked = on;
+}
+
 function renderHole() {
   const hole = holeSpec();
   $('hole-number').textContent = hole.number;
@@ -447,6 +453,14 @@ function wire() {
   $('btn-menu').addEventListener('click', () => openStart());
   $('btn-help').addEventListener('click', () => openModal('modal-help'));
 
+  $('toggle-notes').addEventListener('change', (event) => {
+    const on = event.target.checked;
+    store.setSetting('caddieNotes', on);
+    applyNotesSetting(on);
+    // The scene is framed against the readout, which just changed height.
+    requestAnimationFrame(layoutScene);
+  });
+
   $('btn-board').addEventListener('click', () => {
     if (!state.course) return;
     renderBoard();
@@ -470,6 +484,11 @@ function wire() {
     const done = await copyText(url.toString());
     flash(done ? 'Course link copied' : state.course.code);
   });
+
+  // An explicit close, because the backdrop is a thin strip behind a tall sheet.
+  for (const button of document.querySelectorAll('[data-dismiss]')) {
+    button.addEventListener('click', closeModal);
+  }
 
   // Backdrop closes anything except the dialogs that need a decision.
   $('modal-root').addEventListener('click', (event) => {
@@ -506,6 +525,7 @@ async function copyText(text) {
 
 function boot() {
   wire();
+  applyNotesSetting(store.getSetting('caddieNotes', true));
   const params = new URLSearchParams(window.location.search);
   const code = normalizeCode(params.get('course') || '');
   openStart(code || null);

@@ -20,16 +20,21 @@ No build step, no dependencies, no server. Open `index.html` and play.
 
 ### How par is set
 
-`rateWord()` in `js/course.js` scores each word:
+Par is **measured, not guessed**. `tools/build-pars.mjs` runs a solver over
+every answer from three standard openers (STARE, CRANE, SLATE), choosing
+sensibly and paying the real cost when candidates cannot be told apart. A
+word's expected strokes is the average, and par follows: under 3.02 plays
+short, over 3.70 plays long, and the bulk are par 4s.
 
-| Factor | Effect |
-| --- | --- |
-| Repeated letter | plays **longer** (the classic Wordle wrecker) |
-| `J Q X Z V K W` | plays **longer** — no common opener tests these |
-| `Y F B H P G M` | plays slightly longer |
-| Letters from `S T A R E L N C I O U D` | plays **shorter** |
+Counting letters could not see the traps. BRIDE is built from common letters
+and rates easy that way — but an opener leaves you staring at BRIDE and PRIDE
+with nothing to separate them, and that ambiguity *is* the stroke. The pool's
+hardest words are the `-IVER` and `-OVER` families (`river`, `diver`, `giver`,
+`hover`, `power`, `wider`), where only the first letter moves.
 
-Each course draws two par 3s, five par 4s and two par 5s from those buckets.
+The table lives in `js/pars.js`; regenerate it with `node tools/build-pars.mjs`.
+Each course draws two par 3s, five par 4s and two par 5s, so a nine is always
+par 36.
 
 ### The view
 

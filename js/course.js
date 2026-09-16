@@ -3,6 +3,7 @@
 // type the same code play exactly the same course.
 
 import { ANSWERS } from './words.js';
+import { tabulatedPar } from './pars.js';
 
 // ---------------------------------------------------------------- seeded rng
 
@@ -50,11 +51,15 @@ export function normalizeCode(code) {
 // Letters that show up in the popular openers (LEARN, STARE, CRANE, SLATE,
 // ADIEU). A word built from these is easy to chip away at, so it plays short.
 const OPENER_LETTERS = new Set(['s', 't', 'a', 'r', 'e', 'l', 'n', 'c', 'i', 'o', 'u', 'd']);
-// Letters that survive most openers untouched, so you are swinging blind.
 const AWKWARD_LETTERS = new Set(['j', 'q', 'x', 'z', 'v', 'k', 'w']);
-// Letters an opener misses but that turn up often enough not to be scary.
-const SEMI_AWKWARD_LETTERS = new Set(['y', 'f', 'b', 'h', 'p', 'g', 'm']);
 
+// Par comes from a measured table (see js/pars.js): a solver plays every answer
+// from standard openers and par follows its expected strokes. Counting letters
+// cannot see the traps — BRIDE is all common letters and looks easy, but a
+// standard opener leaves BRIDE and PRIDE with nothing to separate them.
+//
+// The letter counts here no longer set par. They survive only to explain a
+// hole to the player, which is what holeNotes uses them for.
 export function rateWord(word) {
   const letters = word.split('');
   const distinct = new Set(letters);
@@ -62,38 +67,57 @@ export function rateWord(word) {
 
   let openerCover = 0;
   let awkward = 0;
-  let semiAwkward = 0;
   for (const letter of distinct) {
     if (OPENER_LETTERS.has(letter)) openerCover += 1;
     if (AWKWARD_LETTERS.has(letter)) awkward += 1;
-    if (SEMI_AWKWARD_LETTERS.has(letter)) semiAwkward += 1;
   }
 
-  // Double letters are the classic Wordle wrecker (see: WISPY's neighbours).
-  // Opener coverage is the counterweight: every letter your first swing
-  // already tests is yardage you do not have to walk. Weights were tuned so
-  // STARE/LEARN/TRAIL play as par 3s and WISPY/QUEEN/FLUFF play as par 5s.
-  let difficulty = 3.6;
-  difficulty += duplicates * 0.9;
-  difficulty += awkward * 0.6;
-  difficulty += semiAwkward * 0.2;
-  difficulty -= Math.max(0, openerCover - 2) * 0.42;
+  return { par: tabulatedPar(word), duplicates, awkward, openerCover };
+}
 
-  const par = Math.min(5, Math.max(3, Math.round(difficulty)));
-  return { par, difficulty, duplicates, awkward, semiAwkward, openerCover };
+// Answers sitting one letter away from this one. These are what actually cost
+// strokes: you can know four letters and still be guessing.
+export function nearNeighbours(word) {
+  return ANSWERS.filter((other) => {
+    if (other === word) return false;
+    let differences = 0;
+    for (let i = 0; i < 5; i++) {
+      if (other[i] !== word[i] && ++differences > 1) return false;
+    }
+    return differences === 1;
+  });
 }
 
 // Why a hole plays the way it does, in caddie language.
 export function holeNotes(word) {
-  const { duplicates, awkward, openerCover } = rateWord(word);
+  const { par, duplicates, awkward, openerCover } = rateWord(word);
+  const neighbours = nearNeighbours(word);
   const notes = [];
+
+  // Near neighbours are only worth warning about on a hole that plays long.
+  // STARE has nine of them and is still a par 3, because an opener walks
+  // straight onto it — saying "careful" there would just be confusing.
+  if (par >= 4) {
+    if (neighbours.length >= 3) {
+      notes.push(`Careful — ${neighbours.length} other answers sit one letter from this one.`);
+    } else if (neighbours.length === 2) {
+      notes.push('Two other answers are a single letter away. Pick carefully.');
+    } else if (neighbours.length === 1) {
+      notes.push('There is another answer one letter from this one. A coin flip waits.');
+    }
+  }
+
   if (duplicates >= 2) notes.push('Three of a kind in there somewhere — brutal.');
-  else if (duplicates === 1) notes.push('Plays long: there is a repeated letter.');
+  else if (duplicates === 1) notes.push('There is a repeated letter.');
   if (awkward >= 2) notes.push('Two letters your opener will never find.');
   else if (awkward === 1) notes.push('One awkward letter hiding in the trees.');
-  if (openerCover >= 4) notes.push('Wide fairway — a standard opener lights it up.');
-  else if (openerCover <= 2) notes.push('Narrow off the tee. Common letters will not help much.');
-  if (!notes.length) notes.push('Honest par golf. Hit the fairway and go.');
+
+  if (!notes.length) {
+    if (openerCover >= 4) notes.push('Wide fairway — a standard opener lights it up.');
+    else if (openerCover <= 2) notes.push('Narrow off the tee. Common letters will not help much.');
+    else notes.push('Honest par golf. Hit the fairway and go.');
+  }
+  if (par === 5 && notes.length < 2) notes.push('This one plays long.');
   return notes;
 }
 

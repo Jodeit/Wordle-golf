@@ -1,6 +1,7 @@
 // Logic tests. No framework, no install: `node test/run.mjs`.
 
-import { buildCourse, rateWord, normalizeCode, fairwayHalfWidth } from '../js/course.js';
+import { buildCourse, rateWord, normalizeCode, fairwayHalfWidth, nearNeighbours } from '../js/course.js';
+import { tabulatedPar } from '../js/pars.js';
 import { ANSWERS, ALLOWED, isValidGuess } from '../js/words.js';
 import {
   scoreGuess, shotFor, knowledgeFrom, scoreEmoji, strokesFromEmoji, BLOWUP_STROKES,
@@ -39,14 +40,29 @@ eq('repeat in guess, single in answer', scoreGuess('allay', 'alarm'),
 
 // --------------------------------------------------------------- par ratings
 
-// The whole premise: opener-friendly words play short, awkward ones play long.
-for (const word of ['stare', 'learn', 'crane', 'trail', 'solar']) {
+// Par is measured by simulating a solver, not by counting letters. Words a
+// standard opener walks onto play short.
+for (const word of ['stare', 'crane', 'slate', 'trail']) {
   check(`${word} is a par 3`, rateWord(word).par === 3, `got par ${rateWord(word).par}`);
 }
-for (const word of ['wispy', 'queen', 'fluff', 'vivid', 'knock']) {
+// The -IVER family is the pool's worst trap: know four letters and still guess.
+for (const word of ['river', 'diver', 'power', 'wider', 'shade']) {
   check(`${word} is a par 5`, rateWord(word).par === 5, `got par ${rateWord(word).par}`);
 }
+// Letter-counting called BRIDE easy because r/i/d/e are common, but a standard
+// opener leaves BRIDE and PRIDE with nothing to tell them apart.
+check('bride is a par 4, not a par 3', rateWord('bride').par === 4,
+  `got par ${rateWord('bride').par}`);
+check('bride has a one-letter neighbour', nearNeighbours('bride').includes('pride'));
 check('every answer rates 3, 4 or 5', ANSWERS.every((w) => [3, 4, 5].includes(rateWord(w).par)));
+check('the par table covers the whole pool',
+  ANSWERS.every((w) => [3, 4, 5].includes(tabulatedPar(w))));
+// Each bucket must be deep enough to fill the layout without repeating itself.
+const buckets = { 3: 0, 4: 0, 5: 0 };
+for (const w of ANSWERS) buckets[rateWord(w).par] += 1;
+check('every par bucket can fill a course',
+  buckets[3] >= 20 && buckets[4] >= 20 && buckets[5] >= 20,
+  JSON.stringify(buckets));
 
 // ------------------------------------------------------------------ courses
 
@@ -166,10 +182,12 @@ eq('the answer pool order is unchanged',
   `${ANSWERS[0]}/${ANSWERS[472]}/${ANSWERS[944]}`, 'about/model/zebra');
 check('every answer is also a legal guess', ANSWERS.every(isValidGuess));
 
-// A known course, pinned. If this moves, shared codes have broken.
+// A known course, pinned. If this moves, shared codes have broken. It last
+// moved when par stopped being counted from letters and started being measured,
+// which necessarily repartitioned the buckets courses are drawn from.
 eq('course 7KQ2F still plays the same nine',
   buildCourse('7KQ2F').holes.map((h) => h.word).join(','),
-  'favor,alarm,stake,happy,humor,anger,spray,event,gleam');
+  'extra,album,spent,judge,knife,alert,stool,going,glory');
 
 // ------------------------------------------------------------- share cards
 

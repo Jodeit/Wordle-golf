@@ -36,6 +36,19 @@ export function setPlayerName(name) {
   write('player', String(name || '').slice(0, 20));
 }
 
+// ---------------------------------------------------------------- settings
+
+// Caddie notes hint at what makes a hole awkward ("another answer sits one
+// letter away"), which some players want and others read as a spoiler.
+export function getSetting(name, fallback) {
+  const value = read(`setting:${name}`, null);
+  return value === null ? fallback : value;
+}
+
+export function setSetting(name, value) {
+  write(`setting:${name}`, value);
+}
+
 // ------------------------------------------------------------- saved rounds
 
 export function saveRound(round) {

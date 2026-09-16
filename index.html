@@ -95,6 +95,7 @@
   </div>
 
   <div id="modal-round" class="modal" hidden>
+    <button class="modal-close" data-dismiss aria-label="Close">&times;</button>
     <h2 id="round-title">Round complete</h2>
     <div id="round-summary" class="round-summary"></div>
     <pre id="share-card" class="share-card"></pre>
@@ -105,6 +106,7 @@
   </div>
 
   <div id="modal-board" class="modal" hidden>
+    <button class="modal-close" data-dismiss aria-label="Close">&times;</button>
     <h2>🏆 Leaderboard</h2>
     <div class="board-course" id="board-course">—</div>
     <ol id="board-list" class="board-list"></ol>
@@ -119,17 +121,31 @@
   </div>
 
   <div id="modal-help" class="modal" hidden>
+    <button class="modal-close" data-dismiss aria-label="Close">&times;</button>
     <h2>How to play</h2>
+    <label class="toggle">
+      <input id="toggle-notes" type="checkbox" checked />
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-text">
+        <strong>Caddie notes</strong>
+        <small>The line under the shot telling you what makes a hole awkward. Turn it off for no hints.</small>
+      </span>
+    </label>
     <p>Each hole is a five-letter word. Guess it in as few swings as you can —
       <strong>your guesses are your strokes</strong>.</p>
     <ul class="help-list">
-      <li><strong>Par 3</strong> — friendly letters. A standard opener lights it up.</li>
+      <li><strong>Par 3</strong> — a standard opener walks straight onto it.</li>
       <li><strong>Par 4</strong> — honest golf. Most words live here.</li>
-      <li><strong>Par 5</strong> — double letters, or letters no opener ever tests.</li>
+      <li><strong>Par 5</strong> — the traps. Words like <em>RIVER</em>, where you can know
+        four letters and still be guessing between five answers.</li>
       <li>Fail to solve in six and you take a lost ball: <strong>8 strokes</strong>.</li>
     </ul>
-    <p>The map plots each guess as a shot. The more the board lights up, the
-      closer to the pin you finish — greens count double, yellows count half.</p>
+    <p>Par is measured, not guessed: a solver plays every answer from standard
+      openers, and par follows how many strokes it really costs.</p>
+    <p>Your shot is how much is still unknown — how many answers could still be
+      right. Cut the field from hundreds to a handful and you have striped one
+      down the middle. Learn nothing and you have shanked it, wherever you were
+      lying.</p>
     <p>Nine holes make a round. Same course code, same nine words, so you and
       your friends can play the exact same track.</p>
     <p><strong>Answers are always ordinary words.</strong> You can guess anything in
