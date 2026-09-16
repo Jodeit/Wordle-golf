@@ -359,7 +359,7 @@ export class PerspectiveView {
     const ground = ctx.createLinearGradient(0, this.horizon, 0, h);
     ground.addColorStop(0, mixHex(p.rough, p.skyHaze, p.hazeMix));
     ground.addColorStop(0.18, p.rough);
-    ground.addColorStop(1, mixHex(p.rough, '#000000', 0.06));
+    ground.addColorStop(1, mixHex(p.rough, '#000000', 0.14));
     ctx.fillStyle = ground;
     ctx.fillRect(0, this.horizon, w, h - this.horizon);
   }
@@ -400,11 +400,13 @@ export class PerspectiveView {
     const grad = ctx.createLinearGradient(0, pEnd.y, 0, p0.y);
     grad.addColorStop(0, mixHex(p.grass, p.skyHaze, p.hazeMix));
     grad.addColorStop(0.25, p.grass);
-    grad.addColorStop(1, mixHex(p.grass, '#000000', 0.04));
+    grad.addColorStop(1, mixHex(p.grass, '#000000', 0.1));
     ctx.fillStyle = grad;
     ctx.fillRect(0, this.horizon - 2, this.w, this.h);
 
     // Mown bands, 18 yards apart, converging naturally under projection.
+    // Boosted nearest the camera, where the banding is the clearest cue that
+    // the ground is receding rather than a flat painted lane.
     ctx.fillStyle = p.grassLit;
     const band = 14;
     for (let z = 0; z < this.hole.yards + band; z += band * 2) {
@@ -412,7 +414,8 @@ export class PerspectiveView {
       const far = this.project(0, 0, z + band);
       if (!near || !far) continue;
       const alpha = 1 - this.haze(far.depth);
-      ctx.globalAlpha = Math.max(0, alpha * 0.4);
+      const proximity = Math.max(0, 1 - far.depth / (this.camBack * 3));
+      ctx.globalAlpha = Math.max(0, alpha * (0.4 + proximity * 0.28));
       ctx.fillRect(0, far.y, this.w, Math.max(0.5, near.y - far.y));
     }
     ctx.globalAlpha = 1;
@@ -420,13 +423,17 @@ export class PerspectiveView {
   }
 
   // The tee deck you are standing on. Only visible from the tee: once you have
-  // hit, it is behind the camera and the projection drops it.
+  // hit, it is behind the camera and the projection drops it. The camera sits
+  // camBack yards behind the ball even here, so the deck reads as a small,
+  // distant patch unless it is visibly cut differently from the fairway
+  // around it — a flatter, cooler green with its own mown lines and a dark
+  // seam where it meets the fairway, rather than the same turf continuing.
   drawTeeBox() {
     const { ctx } = this;
     const cx = this.centerAt(0);
-    const back = -8;
-    const front = 5;
-    const halfWidth = 6;
+    const back = -9;
+    const front = 6;
+    const halfWidth = 7;
 
     const corners = [
       this.project(cx - halfWidth, 0, back),
@@ -440,20 +447,66 @@ export class PerspectiveView {
     ctx.moveTo(corners[0].x, corners[0].y);
     for (const c of corners.slice(1)) ctx.lineTo(c.x, c.y);
     ctx.closePath();
-    // Tee decks are mown tighter and flatter than the fairway around them.
-    ctx.fillStyle = mixHex(this.palette.grassLit, '#d8e8c8', 0.35);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.save();
+    ctx.clip();
+
+    // Tee decks are mown tighter and flatter than the fairway around them —
+    // a cooler, more uniform green with no light/dark banding to speak of.
+    ctx.fillStyle = mixHex('#6f9e5c', this.palette.skyHaze, 0.08);
+    ctx.fillRect(0, 0, this.w, this.h);
+
+    // Tight cross-mown lines, at right angles to the fairway's bands, so the
+    // deck reads as its own patch of ground rather than more fairway.
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
     ctx.lineWidth = 1;
+    for (let i = -halfWidth; i <= halfWidth; i += 2.4) {
+      const a = this.project(cx + i, 0, back);
+      const b = this.project(cx + i, 0, front);
+      if (!a || !b) continue;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // A dark seam at the back edge — the step down into the rough behind
+    // the tee — is the single strongest depth cue the deck has.
+    const backL = this.project(cx - halfWidth, 0, back);
+    const backR = this.project(cx + halfWidth, 0, back);
+    if (backL && backR) {
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = Math.max(1.5, backL.scale * 0.02);
+      ctx.beginPath();
+      ctx.moveTo(backL.x, backL.y);
+      ctx.lineTo(backR.x, backR.y);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (const c of corners.slice(1)) ctx.lineTo(c.x, c.y);
+    ctx.closePath();
     ctx.stroke();
 
-    // The markers you must tee up between.
+    // The markers you must tee up between, each on a short post so they
+    // read from a distance instead of vanishing to a dot.
     for (const side of [-1, 1]) {
-      const marker = this.project(cx + side * (halfWidth - 1.2), 0.35, 0.5);
-      if (!marker) continue;
-      const r = Math.max(2, marker.scale * 0.035);
+      const baseX = cx + side * (halfWidth - 1.4);
+      const foot = this.project(baseX, 0, 0.5);
+      const head = this.project(baseX, 0.9, 0.5);
+      if (!foot || !head) continue;
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = Math.max(1, foot.scale * 0.012);
       ctx.beginPath();
-      ctx.arc(marker.x, marker.y, r, 0, Math.PI * 2);
+      ctx.moveTo(foot.x, foot.y);
+      ctx.lineTo(head.x, head.y);
+      ctx.stroke();
+      const r = Math.max(2, head.scale * 0.045);
+      ctx.beginPath();
+      ctx.arc(head.x, head.y, r, 0, Math.PI * 2);
       ctx.fillStyle = '#e8503a';
       ctx.fill();
       ctx.strokeStyle = 'rgba(0,0,0,0.3)';
