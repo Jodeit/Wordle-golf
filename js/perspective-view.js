@@ -6,13 +6,10 @@
 // from that, which is why walking up the fairway reads correctly — the green
 // grows, the flag rises, the fairway edges spread past you.
 
-import { makeRng, centerX, fairwayHalfWidth } from './course.js';
+import { makeRng, centerX, fairwayHalfWidth, FIELD_YARDS } from './course.js';
 
 // How many yards across the drawn world is. The shot model works in fractions
 // of the hole's width, so this converts between the two.
-// Real fairways run 30-45 yards across. Wider than that and the foreground
-// becomes a featureless wash of green.
-const FIELD_YARDS = 90;
 // An elevated camera set back behind the player, the view golf coverage and
 // Mario Golf both use. High enough to read the whole hole at once, which a
 // ground-level camera cannot do: from down there the fairway rushes past and
@@ -209,7 +206,7 @@ export class PerspectiveView {
       trees: trees.sort((a, b) => b.z - a.z), // painter's algorithm: far first
       bunkers,
       water,
-      greenRadius: hole.features.greenSize * FIELD_YARDS * 1.25,
+      greenRadius: hole.features.greenRadius,
     };
   }
 

@@ -237,6 +237,22 @@ main {
 /* ----------------------------------------------------------------- grid */
 
 .grid { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; justify-content: center; }
+
+/* The board grows past six rows on a hole that is going badly. Shrink the
+   tiles, and once even that is not enough let the board scroll inside its own
+   box — the keyboard must never be pushed off the bottom of the screen. */
+.grid {
+  max-height: 44vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.grid::-webkit-scrollbar { display: none; }
+
+.grid.grid-tall { gap: 4px; }
+.grid.grid-tall .grid-row { gap: 4px; }
+.grid.grid-tall .tile { width: 32px; height: 32px; font-size: 16px; }
+.grid.grid-taller .tile { width: 27px; height: 27px; font-size: 14px; border-width: 1.5px; }
 .grid-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 
 .tile {
@@ -583,6 +599,8 @@ button.primary:active, button.ghost:active { transform: translateY(1px); }
 /* ------------------------------------------------- bigger screens */
 
 @media (max-height: 700px) {
+  .grid { max-height: 33vh; }
+  .scene-space { min-height: 44px; }
   .tile { width: 32px; height: 32px; font-size: 16px; }
   .key { height: 38px; }
   .hole-notes { display: none; }
@@ -613,6 +631,7 @@ button.primary:active, button.ghost:active { transform: translateY(1px); }
 
 @media (max-height: 470px) {
   main { gap: 5px; padding: 0 6px 5px; }
+  .grid { max-height: 40vh; }
   .tile { width: 25px; height: 25px; font-size: 13px; border-width: 1.5px; }
   .grid, .grid-row { gap: 3px; }
   .key { height: 29px; font-size: 11px; }

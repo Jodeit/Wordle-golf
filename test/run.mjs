@@ -97,7 +97,7 @@ check('a first shot still covers ground', shots[0].remainingYards < hole.yards);
 // the pool makes the board unsatisfiable.
 const testHole = {
   number: 1, word: 'money', par: 4, yards: 400,
-  features: { fairwayWidth: 0.2, greenSize: 0.09, water: false, dogleg: 0, bunkers: 2, treeSeed: 1 },
+  features: { fairwayWidth: 0.2, greenRadius: 18, water: false, dogleg: 0, bunkers: 2, treeSeed: 1 },
 };
 check('the test hole word is a real answer', ANSWERS.includes(testHole.word));
 

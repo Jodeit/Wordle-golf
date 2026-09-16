@@ -14,7 +14,9 @@ No build step, no dependencies, no server. Open `index.html` and play.
 
 - Guess the word. Each guess is one stroke.
 - Solve it in fewer strokes than par for a birdie or better.
-- Fail to solve in six and you take a lost ball: **8 strokes**.
+- There is no failing a hole. Golf has no "you lose" — you keep swinging until
+  the ball drops and card whatever it cost, so the board grows past six rows
+  and a grind-out is simply a seven.
 - Nine holes make a round. Par is always 36, so cards from different courses
   are still comparable.
 
@@ -72,6 +74,11 @@ it actually helps. On a 400-yard par 4:
 | ~30 | ~250 yds | 150 — down the middle |
 | ~6 | ~320 yds | 80 — a wedge to the flag |
 | 1 | ~398 yds | 2 — you know it; tap it in |
+
+Four letters placed puts you on the green whatever the candidate count says:
+being one letter away is a putting problem, not an approach. Further guesses
+from there are putts, and they are counted as such — grind out `-OUND` and the
+card reads green in regulation, then a four-putt.
 
 Candidates are counted over the **answer** pool, not the guess list. You can
 guess `GONER`; the game will never choose it. That means the model sometimes

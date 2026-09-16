@@ -3,7 +3,7 @@
 import { buildCourse, randomCourseCode, normalizeCode } from './course.js';
 import { isValidGuess } from './words.js';
 import {
-  MAX_GUESSES, scoreGuess, shotFor, strokesFor, scoreName, scoreEmoji,
+  HARD_LIMIT, scoreGuess, shotFor, strokesFor, scoreName, scoreEmoji,
   toParLabel, newRound, roundTotals,
 } from './game.js';
 import { HoleView } from './hole-view.js';
@@ -87,7 +87,14 @@ function renderGrid() {
   const rows = holeState().rows;
   grid.innerHTML = '';
 
-  for (let r = 0; r < MAX_GUESSES; r++) {
+  // Six rows to start, then one more each time you need it. There is no
+  // failing a hole, so the board grows rather than shutting you out.
+  const rowCount = Math.min(HARD_LIMIT, Math.max(6, rows.length + 1));
+  grid.style.gridTemplateRows = `repeat(${rowCount}, 1fr)`;
+  grid.classList.toggle('grid-tall', rowCount > 6);
+  grid.classList.toggle('grid-taller', rowCount > 8);
+
+  for (let r = 0; r < rowCount; r++) {
     const rowEl = document.createElement('div');
     rowEl.className = 'grid-row';
     rowEl.dataset.row = String(r);
@@ -108,6 +115,8 @@ function renderGrid() {
     }
     grid.appendChild(rowEl);
   }
+  // Keep the row you are typing into in view once the board starts scrolling.
+  if (rowCount > 6) grid.scrollTop = grid.scrollHeight;
 }
 
 const KB_ROWS = ['qwertyuiop', 'asdfghjkl', '↵zxcvbnm⌫'];
@@ -224,7 +233,8 @@ function submitGuess() {
   state.current = '';
 
   const solved = guess === hole.word;
-  const out = !solved && st.rows.length >= MAX_GUESSES;
+  // Only the backstop ends a hole now, and even then the score is your guesses.
+  const out = !solved && st.rows.length >= HARD_LIMIT;
   const shot = shotFor({ hole, rows: st.rows, index: st.rows.length - 1, solved });
   st.shots.push(shot);
 
@@ -266,11 +276,11 @@ function finishHole() {
   if (!solved || strokes > hole.par) document.body.classList.add('mourn');
   setTimeout(() => document.body.classList.remove('mourn'), 950);
 
-  $('result-score').textContent = solved ? scoreName(strokes, hole.par) : 'Lost ball';
+  $('result-score').textContent = solved ? scoreName(strokes, hole.par) : 'Picked up';
   $('result-word').textContent = hole.word;
   $('result-line').textContent = solved
     ? `${strokes} ${strokes === 1 ? 'stroke' : 'strokes'} on a par ${hole.par}. ${reaction.sub}`
-    : `Never found it. Take ${strokes} and move on.`;
+    : `That is enough. ${strokes} strokes and on to the next.`;
 
   const totals = roundTotals(state.round, state.course);
   const last = state.round.currentHole === state.round.holes.length - 1;

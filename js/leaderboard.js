@@ -171,8 +171,10 @@ export function parseShareCard(text, course) {
   // Anything better than an eagle collapses into the same glyph, so each 🦅
   // can understate the round by a shot. Allow for that, and treat a bigger
   // gap as a card that has been edited.
-  const eagles = marks.filter((g) => g === '🦅').length;
-  if (Math.abs(derived - strokes) > eagles + 1) {
+  // Anything better than an eagle, and anything past a triple bogey, collapses
+  // into a single glyph, so each of those can misstate the round by a shot.
+  const vague = marks.filter((g) => g === '🦅' || g === '❌').length;
+  if (Math.abs(derived - strokes) > vague + 1) {
     return { error: 'That card\'s total does not match its hole-by-hole marks.' };
   }
 

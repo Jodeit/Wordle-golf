@@ -129,6 +129,10 @@ function yardageFor(par, rng) {
 
 // ----------------------------------------------------------- hole geometry
 
+// How many yards across the drawn world is. Shared so the shot model, the
+// overhead inset and the view down the hole all agree on a yard.
+export const FIELD_YARDS = 90;
+
 // The hole runs tee (t=0) to green (t=1). A dogleg bends the centre line.
 export function centerX(t, dogleg) {
   return 0.5 + dogleg * Math.sin(Math.PI * t);
@@ -151,7 +155,10 @@ function featuresFor(par, rng) {
     bunkers: par === 3 ? 1 + Math.round(rng()) : 2 + Math.round(rng() * 2),
     water: rng() < (par === 5 ? 0.45 : 0.3),
     fairwayWidth: 0.16 + rng() * 0.1,
-    greenSize: par === 3 ? 0.11 + rng() * 0.03 : 0.085 + rng() * 0.035,
+    // Radius in yards, not a fraction of the hole. A green does not get bigger
+    // because the hole is longer — scaling it that way gave a 554-yard par 5 a
+    // green 54 yards across, and putts measured in hundreds of feet.
+    greenRadius: par === 3 ? 16 + rng() * 5 : 14 + rng() * 7,
     treeSeed: Math.floor(rng() * 100000),
   };
 }

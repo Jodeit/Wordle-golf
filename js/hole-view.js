@@ -1,7 +1,7 @@
 // Overhead hole renderer — the little Mario Golf style map. Tee at the bottom,
 // green at the top, your shots plotted up the fairway as you guess.
 
-import { makeRng, centerX, fairwayHalfWidth } from './course.js';
+import { makeRng, centerX, fairwayHalfWidth, FIELD_YARDS } from './course.js';
 
 const COLORS = {
   rough: '#2f6d3a',
@@ -157,8 +157,10 @@ export class HoleView {
     const { ctx } = this;
     const f = this.hole.features;
     const c = this.point(centerX(1, f.dogleg), 1);
-    const rx = f.greenSize * this.w * 1.6;
-    const ry = f.greenSize * this.h * 0.95;
+    // Across: the green's real width against the width of the drawn world.
+    // Up the page: its real depth against the length of the hole.
+    const rx = (f.greenRadius / FIELD_YARDS) * this.w * 1.15;
+    const ry = Math.max(5, (f.greenRadius / this.hole.yards) * this.h * 0.9);
 
     ctx.beginPath();
     ctx.ellipse(c.x, c.y, rx + 4, ry + 4, 0, 0, Math.PI * 2);
