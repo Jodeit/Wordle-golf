@@ -292,6 +292,7 @@ export class PerspectiveView {
     this.drawSky();
     this.drawGround();
     this.drawFairway();
+    this.drawTeeBox();
     if (this.scenery.water) this.drawWater();
     for (const bunker of this.scenery.bunkers) this.drawBunker(bunker);
     this.drawGreen();
@@ -419,6 +420,49 @@ export class PerspectiveView {
     }
     ctx.globalAlpha = 1;
     ctx.restore();
+  }
+
+  // The tee deck you are standing on. Only visible from the tee: once you have
+  // hit, it is behind the camera and the projection drops it.
+  drawTeeBox() {
+    const { ctx } = this;
+    const cx = this.centerAt(0);
+    const back = -8;
+    const front = 5;
+    const halfWidth = 6;
+
+    const corners = [
+      this.project(cx - halfWidth, 0, back),
+      this.project(cx + halfWidth, 0, back),
+      this.project(cx + halfWidth, 0, front),
+      this.project(cx - halfWidth, 0, front),
+    ];
+    if (corners.some((c) => !c)) return;
+
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (const c of corners.slice(1)) ctx.lineTo(c.x, c.y);
+    ctx.closePath();
+    // Tee decks are mown tighter and flatter than the fairway around them.
+    ctx.fillStyle = mixHex(this.palette.grassLit, '#d8e8c8', 0.35);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // The markers you must tee up between.
+    for (const side of [-1, 1]) {
+      const marker = this.project(cx + side * (halfWidth - 1.2), 0.35, 0.5);
+      if (!marker) continue;
+      const r = Math.max(2, marker.scale * 0.035);
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#e8503a';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
   }
 
   // A circle in world space, projected point by point — correct under

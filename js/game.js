@@ -214,7 +214,17 @@ function shotLabel({ index, lie, quality, remainingYards, solved, hole, previous
   // Off the tee, the strike is the story — but check where it finished first,
   // or a drive good enough to reach the green gets called offline.
   if (index === 0) {
-    if (lie === 'green') return `Drove it onto the green. On a par ${hole.par}!`;
+    // Reaching the green off the tee is the whole point of a par 3, so only
+    // shout about it on a hole where it is a genuine feat.
+    if (lie === 'green') {
+      const feet = Math.max(1, Math.round(remainingYards * 3));
+      if (hole.par === 3) {
+        return feet <= 8
+          ? `On the green, stiff. ${feet === 1 ? 'A foot' : `${feet} feet`} for it.`
+          : `Green in regulation. ${feet} feet for it.`;
+      }
+      return `Drove it onto the green. On a par ${hole.par}!`;
+    }
     if (quality === 'duff') return `Pop-up off the tee — ${distance}. Grim.`;
     if (quality === 'poor') return `Thin and short — ${distance}.`;
     if (quality === 'pure') {
