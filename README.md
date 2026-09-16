@@ -31,13 +31,29 @@ No build step, no dependencies, no server. Open `index.html` and play.
 
 Each course draws two par 3s, five par 4s and two par 5s from those buckets.
 
-### The map
+### The view
 
-The overhead view plots each guess as a golf shot. Greens count double,
-yellows count half — the more the board lights up, the closer to the pin you
-finish. A drive that catches two letters is a decent poke down the middle; one
-that catches three leaves you a wedge. Spray a guess full of dead letters and
-you'll find the rough, the sand, or the trees.
+The hole is the page. A perspective view from behind your ball fills the
+screen and the game floats over it on glass, with a small overhead inset in
+the corner for where the ball actually lies.
+
+`js/perspective-view.js` is a real pinhole projection, not a painted
+backdrop: world coordinates are yards, the camera stands behind the ball at
+eye height and yaws to keep the pin centred. Everything follows from that —
+walk up the fairway and the green grows, the flag rises, the fairway edges
+spread past you. Circles on the ground (greens, bunkers) are projected point
+by point, so they sit flat in the plane instead of looking like stickers.
+
+How far back the camera sits is solved per layout rather than fixed, because
+the game panel leaves a band of very different heights on a phone versus a
+desktop. Light tracks the round: the first hole is played at dawn, the turn
+at midday, the ninth into a low sun.
+
+Each guess plays as a shot. Greens count double, yellows count half — the
+more the board lights up, the closer to the pin you finish. A drive that
+catches two letters is a decent poke down the middle; one that catches three
+leaves you a wedge. Spray a guess full of dead letters and you'll find the
+rough, the sand, or the trees.
 
 Shots are seeded per hole and per guess, so replaying a round redraws it
 exactly the same way.
@@ -99,7 +115,8 @@ shot model, share-card round-tripping and tamper rejection.
 | `js/words.js` | Answer bank (seeds courses — do not edit) and legal guesses |
 | `js/course.js` | Seeded RNG, par ratings, course names, hole geometry |
 | `js/game.js` | Wordle marking, golf scoring, the shot model |
-| `js/hole-view.js` | The overhead hole renderer |
+| `js/perspective-view.js` | The view down the hole — projection, scenery, light |
+| `js/hole-view.js` | The overhead inset |
 | `js/celebrate.js` | Confetti for birdies, rain for bogeys |
 | `js/leaderboard.js` | Local storage, share cards, importing |
 | `js/app.js` | UI glue |

@@ -1,20 +1,21 @@
-/* Wordle Golf — dark, phone-first. Most rounds get played one-handed in a
-   group chat argument, so the grid and keyboard own the bottom of the screen. */
+/* Wordle Golf — the hole is the page. A perspective view of the fairway fills
+   the screen, and everything else floats over it on glass. */
 
 :root {
-  --bg: #0f1a12;
-  --panel: #16251a;
-  --panel-2: #1d3023;
-  --line: #2b4632;
-  --text: #eaf3ec;
-  --dim: #9bb3a2;
-  --green: #5aa85f;
-  --yellow: #c9b458;
-  --grey: #3a4a3e;
+  --ink: #f2f7f2;
+  --ink-dim: #b9cbbe;
+  --glass: rgba(10, 20, 13, 0.62);
+  --glass-solid: rgba(10, 20, 13, 0.86);
+  --glass-line: rgba(255, 255, 255, 0.14);
+  --green: #4fa356;
+  --yellow: #c9a227;
+  --grey: rgba(255, 255, 255, 0.16);
+  --key: rgba(255, 255, 255, 0.17);
   --accent: #ffd24a;
-  --bad: #c96a5a;
-  --radius: 12px;
-  --font: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  --bad: #e07a63;
+  --radius: 14px;
+  --font: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
 * { box-sizing: border-box; }
@@ -22,8 +23,8 @@
 html, body {
   margin: 0;
   height: 100%;
-  background: var(--bg);
-  color: var(--text);
+  background: #0c1710;
+  color: var(--ink);
   font-family: var(--font);
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
@@ -35,6 +36,17 @@ body {
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
+/* The course itself, behind everything. */
+#scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.topbar, main { position: relative; z-index: 1; }
+
 /* ------------------------------------------------------------- top bar */
 
 .topbar {
@@ -43,8 +55,6 @@ body {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
 }
 
 .course-id { min-width: 0; }
@@ -57,17 +67,18 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 
 .code-chip {
   margin-top: 2px;
-  padding: 1px 7px;
+  padding: 2px 8px;
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 11px;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.6px;
   color: var(--accent);
-  background: rgba(255, 210, 74, 0.12);
-  border: 1px solid rgba(255, 210, 74, 0.3);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 210, 74, 0.35);
   border-radius: 20px;
   cursor: pointer;
 }
@@ -78,10 +89,12 @@ body {
   width: 34px;
   height: 34px;
   font-size: 15px;
-  color: var(--text);
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 9px;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
 }
 
@@ -94,74 +107,113 @@ main {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: 6px;
-  padding: 6px 8px 8px;
+  gap: 8px;
+  padding: 0 8px 8px;
 }
 
-.hole-panel { display: flex; flex-direction: column; min-height: 0; gap: 4px; }
-
-.hole-meta {
+/* Broadcast-style hole card. */
+.hud {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--dim);
+  align-items: center;
+  gap: 14px;
+  align-self: flex-start;
+  padding: 7px 14px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
 }
 
-.hole-meta strong { color: var(--text); font-size: 14px; }
-.hole-meta .dim { color: var(--dim); }
-.hole-meta .total {
-  margin-left: auto;
-  padding: 2px 9px;
+.hud-hole, .hud-stat { display: flex; align-items: baseline; gap: 5px; }
+
+.hud-label {
+  font-size: 9px;
   font-weight: 700;
-  color: var(--accent);
-  background: rgba(255, 210, 74, 0.1);
-  border-radius: 20px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
 }
 
-.map-wrap { display: flex; flex-direction: column; flex: 1; min-height: 120px; }
-
-.map-wrap #hole-map { flex: 1; min-height: 0; }
-
-#hole-map {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+.hud strong {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
 }
+
+.hud-of { font-size: 11px; color: var(--ink-dim); }
+
+.hud-total {
+  padding: 3px 11px;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #10250f;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+/* Open space where the course shows through, with the overhead inset. */
+.scene-space { position: relative; flex: 1; min-height: 60px; }
+
+#minimap {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 76px;
+  height: 104px;
+  background: rgba(8, 18, 11, 0.5);
+  border: 1px solid var(--glass-line);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
+}
+
+.readout { text-align: center; }
 
 .shot-label {
-  padding: 5px 9px;
-  margin-top: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  display: inline-block;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
 }
 
 .hole-notes {
-  margin: 0;
+  margin: 5px 0 0;
   font-size: 11px;
   font-style: italic;
-  color: var(--dim);
-  text-align: center;
+  color: var(--ink-dim);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.7);
 }
 
-.play-panel { display: flex; flex-direction: column; gap: 5px; }
+/* The glass slab that holds the actual game. */
+.play-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 10px 8px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: var(--shadow);
+}
 
 /* ----------------------------------------------------------------- grid */
 
-.grid {
-  display: grid;
-  grid-template-rows: repeat(6, 1fr);
-  gap: 4px;
-  justify-content: center;
-}
-
-.grid-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.grid { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; justify-content: center; }
+.grid-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 
 .tile {
   display: flex;
@@ -170,16 +222,17 @@ main {
   width: 38px;
   height: 38px;
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.22);
   border: 2px solid var(--grey);
-  border-radius: 4px;
+  border-radius: 7px;
 }
 
-.tile.filled { border-color: #55705c; animation: pop 90ms ease-out; }
+.tile.filled { border-color: rgba(255, 255, 255, 0.45); animation: pop 90ms ease-out; }
 .tile.correct { color: #fff; background: var(--green); border-color: var(--green); }
 .tile.present { color: #fff; background: var(--yellow); border-color: var(--yellow); }
-.tile.absent { color: #fff; background: var(--grey); border-color: var(--grey); }
+.tile.absent { color: rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.4); border-color: transparent; }
 
 .grid-row.shake { animation: shake 400ms ease; }
 
@@ -193,9 +246,9 @@ main {
 }
 
 .message {
-  min-height: 16px;
+  min-height: 15px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   color: var(--accent);
 }
@@ -213,10 +266,10 @@ main {
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--text);
-  background: #43584a;
+  color: var(--ink);
+  background: var(--key);
   border: 0;
-  border-radius: 5px;
+  border-radius: 7px;
   cursor: pointer;
   user-select: none;
 }
@@ -225,40 +278,40 @@ main {
 .key:active { transform: translateY(1px); }
 .key.correct { background: var(--green); }
 .key.present { background: var(--yellow); }
-.key.absent { background: #26332a; color: #6e8375; }
+.key.absent { background: rgba(0, 0, 0, 0.42); color: rgba(255, 255, 255, 0.35); }
 
 /* ----------------------------------------------------------- scorecard */
-
-.scorecard-strip { overflow-x: auto; }
 
 .scorecard {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(30px, 1fr);
+  grid-auto-columns: 1fr;
   gap: 3px;
-  min-width: 100%;
+  margin-top: 2px;
 }
 
 .sc-hole {
   padding: 3px 0;
-  font-size: 10px;
+  font-size: 9px;
   text-align: center;
-  color: var(--dim);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  color: var(--ink-dim);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid transparent;
+  border-radius: 7px;
 }
 
 .sc-hole .sc-score {
   display: block;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 .sc-hole.current { border-color: var(--accent); }
-.sc-hole.under .sc-score { color: #7ee08a; }
+.sc-hole.under .sc-score { color: #8ae697; }
 .sc-hole.over .sc-score { color: var(--bad); }
+.sc-par { display: none; }
 
 /* -------------------------------------------------------------- modals */
 
@@ -446,55 +499,50 @@ button.primary:active, button.ghost:active { transform: translateY(1px); }
 
 /* ------------------------------------------------- bigger screens */
 
-/* Short screens — small phones, and anything in landscape. The map is the
-   point of the game, so the grid and keyboard give up height to protect it
-   rather than squeezing it down to a strip. */
 @media (max-height: 700px) {
-  .tile { width: 31px; height: 31px; font-size: 16px; }
+  .tile { width: 32px; height: 32px; font-size: 16px; }
   .key { height: 38px; }
   .hole-notes { display: none; }
-  .map-wrap { min-height: 150px; }
 }
 
-/* Two columns as soon as there is width for it. Landscape phones need this
-   more than desktops do: stacked, their keyboard falls off the screen. */
+/* Two columns as soon as there is width: the course keeps the left of the
+   screen, the game sits on glass down the right. Landscape phones need this
+   more than desktops do — stacked, their keyboard falls off the screen. */
 @media (min-width: 700px) {
   main {
     display: grid;
-    grid-template-columns: 1fr minmax(320px, 380px);
-    grid-template-rows: 1fr auto;
+    grid-template-columns: 1fr minmax(330px, 390px);
+    grid-template-rows: auto 1fr;
+    align-items: start;
     gap: 12px;
-    padding: 12px;
+    padding: 0 12px 12px;
   }
-  .hole-panel { grid-row: 1 / 3; min-height: 0; }
-  .play-panel { justify-content: center; }
-  .scorecard-strip { grid-column: 2; }
-}
-
-/* Landscape phones: roughly 390px of height to hold a six-row grid, a
-   keyboard and a scorecard. Everything gets tighter or it does not fit. */
-@media (max-height: 470px) {
-  main { gap: 6px; padding: 6px; }
-  .tile { width: 26px; height: 26px; font-size: 14px; border-width: 1.5px; }
-  .grid, .grid-row { gap: 3px; }
-  .key { height: 31px; font-size: 11px; }
-  .keyboard { gap: 3px; }
-  .kb-row { gap: 3px; }
-  .message { min-height: 13px; font-size: 11px; }
-  .shot-label { margin-top: 3px; padding: 3px 8px; font-size: 11px; }
-  .hole-meta { font-size: 11px; }
-  .sc-hole { font-size: 9px; }
-  .sc-hole .sc-score { font-size: 12px; }
-  /* The current hole's par is already in the bar above, and these last few
-     pixels are the difference between the strip fitting and not. */
-  .sc-par { display: none; }
+  .hud { grid-column: 1; }
+  .scene-space { grid-column: 1; grid-row: 2; }
+  .readout { grid-column: 1; grid-row: 2; align-self: end; padding-bottom: 6px; }
+  .play-panel { grid-column: 2; grid-row: 1 / 3; }
+  #minimap { width: 104px; height: 142px; }
 }
 
 @media (min-width: 700px) and (min-height: 620px) {
   .tile { width: 46px; height: 46px; font-size: 22px; }
-  /* A hole drawn taller than this stops reading as a hole and starts
-     reading as a corridor. */
-  .map-wrap { max-height: 72vh; }
+}
+
+@media (max-height: 470px) {
+  main { gap: 5px; padding: 0 6px 5px; }
+  .tile { width: 25px; height: 25px; font-size: 13px; border-width: 1.5px; }
+  .grid, .grid-row { gap: 3px; }
+  .key { height: 29px; font-size: 11px; }
+  .keyboard, .kb-row { gap: 3px; }
+  .message { min-height: 11px; font-size: 10px; }
+  .play-panel { gap: 4px; padding: 6px 6px 5px; }
+  .hud { padding: 4px 11px; gap: 10px; }
+  .hud strong { font-size: 16px; }
+  .hud-total { padding: 2px 9px; font-size: 12px; }
+  .shot-label { padding: 4px 11px; font-size: 11px; }
+  .sc-hole { padding: 2px 0; font-size: 8px; }
+  .sc-hole .sc-score { font-size: 11px; }
+  #minimap { width: 58px; height: 78px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

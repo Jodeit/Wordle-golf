@@ -11,6 +11,8 @@
 </head>
 <body>
 
+<canvas id="scene" aria-hidden="true"></canvas>
+
 <header class="topbar">
   <div class="course-id">
     <h1 id="course-name">Wordle Golf</h1>
@@ -24,27 +26,30 @@
 </header>
 
 <main id="game" hidden>
-  <section class="hole-panel">
-    <div class="hole-meta">
-      <span class="hole-number">Hole <strong id="hole-number">1</strong><span class="dim">/9</span></span>
-      <span class="hole-stat">Par <strong id="hole-par">4</strong></span>
-      <span class="hole-stat"><strong id="hole-yards">400</strong> yds</span>
-      <span class="hole-stat total" id="round-total">E</span>
+  <div class="hud">
+    <div class="hud-hole">
+      <span class="hud-label">Hole</span>
+      <strong id="hole-number">1</strong>
+      <span class="hud-of">/9</span>
     </div>
-    <div class="map-wrap">
-      <canvas id="hole-map" aria-label="Overhead view of the hole"></canvas>
-      <div id="shot-label" class="shot-label">On the tee.</div>
-    </div>
+    <div class="hud-stat"><span class="hud-label">Par</span><strong id="hole-par">4</strong></div>
+    <div class="hud-stat"><span class="hud-label">Yards</span><strong id="hole-yards">400</strong></div>
+    <div class="hud-total" id="round-total">E</div>
+  </div>
+
+  <div class="scene-space">
+    <canvas id="minimap" aria-label="Overhead view of the hole"></canvas>
+  </div>
+
+  <div class="readout">
+    <div id="shot-label" class="shot-label">On the tee.</div>
     <p id="hole-notes" class="hole-notes"></p>
-  </section>
+  </div>
 
   <section class="play-panel">
     <div id="grid" class="grid" role="grid" aria-label="Guesses"></div>
     <div id="message" class="message" role="status" aria-live="polite"></div>
     <div id="keyboard" class="keyboard"></div>
-  </section>
-
-  <section class="scorecard-strip">
     <div id="scorecard" class="scorecard"></div>
   </section>
 </main>

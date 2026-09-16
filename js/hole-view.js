@@ -19,8 +19,11 @@ const COLORS = {
 };
 
 export class HoleView {
-  constructor(canvas) {
+  constructor(canvas, { compact = false } = {}) {
     this.canvas = canvas;
+    // As a small inset there is no room for scenery detail; the point is
+    // simply where the ball sits relative to the fairway.
+    this.compact = compact;
     this.ctx = canvas.getContext('2d');
     this.hole = null;
     this.shots = [];
@@ -35,8 +38,8 @@ export class HoleView {
   resize() {
     const ratio = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
-    const width = Math.max(220, rect.width || this.canvas.clientWidth || 320);
-    const height = Math.max(260, rect.height || this.canvas.clientHeight || 420);
+    const width = Math.max(40, rect.width || this.canvas.clientWidth || 320);
+    const height = Math.max(50, rect.height || this.canvas.clientHeight || 420);
     this.canvas.width = Math.round(width * ratio);
     this.canvas.height = Math.round(height * ratio);
     this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -98,7 +101,7 @@ export class HoleView {
     this.drawFairway();
     this.drawBunkers(rng);
     this.drawGreen();
-    this.drawTrees(rng);
+    if (!this.compact) this.drawTrees(rng);
     this.drawTee();
     this.drawShots(flight);
     this.drawFlag();

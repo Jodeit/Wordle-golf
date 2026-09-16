@@ -7,6 +7,7 @@ import {
   toParLabel, newRound, roundTotals,
 } from './game.js';
 import { HoleView } from './hole-view.js';
+import { PerspectiveView } from './perspective-view.js';
 import { celebrate, celebrateRound } from './celebrate.js';
 import * as store from './leaderboard.js';
 
@@ -16,11 +17,15 @@ const state = {
   course: null,
   round: null,
   previewCourse: null,
-  current: '',      // the guess being typed
-  locked: false,    // true while an animation is playing
+  current: '',         // the guess being typed
+  locked: false,       // true while a shot is in the air
+  pendingSubmit: false, // an enter pressed mid-animation, played once it lands
 };
 
-let view = null;
+// Two views of the same hole: the full-screen perspective the player stands in,
+// and the overhead inset that shows where the ball actually is.
+let scene = null;
+let minimap = null;
 
 // ------------------------------------------------------------------ modals
 
@@ -66,7 +71,8 @@ function renderHole() {
   $('round-total').textContent = totals.played ? toParLabel(totals.toPar) : 'E';
 
   const shots = holeState().shots;
-  view.setHole(hole, shots);
+  scene.setHole(hole, shots);
+  minimap.setHole(hole, shots);
   $('shot-label').textContent = shots.length ? shots[shots.length - 1].label : 'On the tee.';
 }
 
@@ -153,24 +159,35 @@ function renderScorecard() {
   });
 }
 
+// Tell the scene how much of the screen it actually gets to use, so it can
+// frame the hole above the game panel rather than behind it.
+function layoutScene() {
+  const readout = document.querySelector('.readout');
+  const panel = document.querySelector('.play-panel');
+  const edge = readout || panel;
+  if (!scene || !edge) return;
+  scene.layout(edge.getBoundingClientRect().top);
+  scene.draw();
+}
+
 function renderAll() {
   renderHeader();
   renderHole();
   renderGrid();
   renderKeyboard();
   renderScorecard();
+  requestAnimationFrame(layoutScene);
 }
 
 // -------------------------------------------------------------- game flow
 
 function typeLetter(letter) {
-  if (state.locked || state.current.length >= 5) return;
+  if (state.current.length >= 5) return;
   state.current += letter;
   renderGrid();
 }
 
 function backspace() {
-  if (state.locked) return;
   state.current = state.current.slice(0, -1);
   renderGrid();
 }
@@ -183,7 +200,12 @@ function shakeRow() {
 }
 
 function submitGuess() {
-  if (state.locked) return;
+  // Pressing enter while the shot is still in the air used to be swallowed.
+  // Hold the submission and play it the moment the ball comes to rest.
+  if (state.locked) {
+    if (state.current.length === 5) state.pendingSubmit = true;
+    return;
+  }
   const guess = state.current.toLowerCase();
   const hole = holeSpec();
   const st = holeState();
@@ -205,14 +227,21 @@ function submitGuess() {
 
   state.locked = true;
   $('shot-label').textContent = shot.label;
-  view.playShot(st.shots, () => {
+  minimap.playShot(st.shots);
+  // The perspective camera runs longest, so it owns the "shot finished" moment.
+  scene.playShot(st.shots, () => {
     state.locked = false;
     if (solved || out) {
       st.status = solved ? 'won' : 'lost';
+      state.pendingSubmit = false;
       store.saveRound(state.round);
       setTimeout(() => finishHole(), 420);
     } else {
       store.saveRound(state.round);
+      if (state.pendingSubmit) {
+        state.pendingSubmit = false;
+        submitGuess();
+      }
     }
   });
 }
@@ -252,6 +281,7 @@ function nextHole() {
   if (last) { finishRound(); return; }
   state.round.currentHole += 1;
   state.current = '';
+  state.pendingSubmit = false;
   store.saveRound(state.round);
   renderAll();
 }
@@ -305,9 +335,12 @@ function startRound(course, playerName) {
   state.current = '';
   $('game').hidden = false;
   closeModal();
-  if (!view) view = new HoleView($('hole-map'));
-  view.resize();
+  if (!scene) scene = new PerspectiveView($('scene'));
+  if (!minimap) minimap = new HoleView($('minimap'), { compact: true });
+  scene.resize();
+  minimap.resize();
   renderAll();
+  window.addEventListener('resize', () => requestAnimationFrame(layoutScene));
 
   const url = new URL(window.location.href);
   url.search = `?course=${course.code}`;
