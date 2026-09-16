@@ -188,8 +188,10 @@ main {
   border-radius: 999px;
 }
 
-/* Open space where the course shows through, with the overhead inset. */
-.scene-space { position: relative; flex: 1; min-height: 60px; }
+/* Open space where the course shows through, with the overhead inset. Capped
+   rather than left to soak up every leftover pixel: the grid and keyboard
+   below it are what you actually play on, and should get the room first. */
+.scene-space { position: relative; flex: 1; min-height: 60px; max-height: 26vh; }
 
 #minimap {
   position: absolute;
@@ -229,10 +231,14 @@ main {
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.7);
 }
 
-/* The glass slab that holds the actual game. */
+/* The glass slab that holds the actual game. Grows to claim whatever the
+   capped scene above it gives up, so the grid and keyboard are the biggest
+   things on screen rather than the fairway. */
 .play-panel {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  justify-content: flex-end;
   gap: 6px;
   padding: 10px 10px 8px;
   background: var(--glass);
@@ -268,9 +274,9 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  font-size: 19px;
+  width: 46px;
+  height: 46px;
+  font-size: 23px;
   font-weight: 800;
   text-transform: uppercase;
   background: rgba(0, 0, 0, 0.22);
@@ -315,8 +321,8 @@ main {
 
 .key {
   flex: 1;
-  max-width: 44px;
-  height: 50px;
+  max-width: 48px;
+  height: 54px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -634,9 +640,12 @@ button.primary:active, button.ghost:active { transform: translateY(1px); }
     padding: 0 12px 12px;
   }
   .hud { grid-column: 1; }
-  .scene-space { grid-column: 1; grid-row: 2; }
+  /* The mobile cap exists to hand space to the play panel below it; in the
+     two-column layout the panel already has its own column, so let the
+     course fill its side of the screen again. */
+  .scene-space { grid-column: 1; grid-row: 2; max-height: none; }
   .readout { grid-column: 1; grid-row: 2; align-self: end; padding-bottom: 6px; }
-  .play-panel { grid-column: 2; grid-row: 1 / 3; }
+  .play-panel { grid-column: 2; grid-row: 1 / 3; justify-content: center; }
   #minimap { width: 104px; height: 142px; }
   .key { max-width: 52px; height: 56px; font-size: 15px; }
   .key.wide { max-width: 80px; font-size: 12px; }
