@@ -87,12 +87,13 @@ function renderGrid() {
   const rows = holeState().rows;
   grid.innerHTML = '';
 
-  // The board opens at par and grows a row at a time. Six empty rows used to
-  // say "six tries"; with no limit that means nothing, while par is the number
-  // actually worth looking at — so the grid shows the target and the rows you
-  // spend beyond it.
+  // Only the rows you have actually played, plus the one you are typing —
+  // padding the board out to par used to mean a par 5 always showed five
+  // empty rows, which forced tiles to shrink to fit the shaded panel's
+  // height even though its width had room to spare. Par is still the
+  // target; it just shows as a line to reach for, not blank boxes.
   const par = holeSpec().par;
-  const rowCount = Math.min(HARD_LIMIT, Math.max(par, rows.length + 1));
+  const rowCount = Math.min(HARD_LIMIT, rows.length + 1);
   grid.style.gridTemplateRows = `repeat(${rowCount}, 1fr)`;
   grid.classList.toggle('grid-tall', rowCount > 6);
   grid.classList.toggle('grid-taller', rowCount > 8);
@@ -119,6 +120,15 @@ function renderGrid() {
     }
     grid.appendChild(rowEl);
   }
+
+  // Mark where par falls without spending a whole row on it.
+  if (rowCount < par) {
+    const marker = document.createElement('div');
+    marker.className = 'par-marker';
+    marker.textContent = `Par ${par}`;
+    grid.appendChild(marker);
+  }
+
   // Keep the row you are typing into in view once the board starts scrolling.
   if (rowCount > 6) grid.scrollTop = grid.scrollHeight;
 }
