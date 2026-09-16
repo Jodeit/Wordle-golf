@@ -118,22 +118,42 @@ export class HoleView {
     }
   }
 
+  // The real, scored edge — shared with the shot model, so a ball drawn on
+  // the short grass is always scored as being on the short grass.
   fairwayEdge(t, side) {
     return centerX(t, this.hole.features.dogleg) + side * fairwayHalfWidth(this.hole, t);
   }
 
+  // A wobble layered on top of the real edge, purely so the fairway reads as
+  // mown ground and not a ruler-straight lane — like the bunker and tree
+  // scatter, it is cosmetic and never touches the width shots are scored
+  // against. Fades to nothing at the tee and the green so both stay clean.
+  edgeWobble(seedSalt) {
+    const rng = makeRng(this.hole.features.treeSeed ^ seedSalt);
+    const a1 = 0.018 + rng() * 0.024;
+    const a2 = 0.008 + rng() * 0.016;
+    const p1 = rng() * Math.PI * 2;
+    const p2 = rng() * Math.PI * 2;
+    return (t) => {
+      const envelope = Math.sin(Math.PI * Math.min(1, t));
+      return (Math.sin(t * 5.3 + p1) * a1 + Math.sin(t * 11.4 + p2) * a2) * envelope;
+    };
+  }
+
   drawFairway() {
     const { ctx } = this;
+    const wobbleLeft = this.edgeWobble(0x2c1f);
+    const wobbleRight = this.edgeWobble(0x7ae3);
     ctx.beginPath();
     for (let i = 0; i <= 40; i++) {
       const t = i / 40;
-      const p = this.point(this.fairwayEdge(t, -1), t);
+      const p = this.point(this.fairwayEdge(t, -1) + wobbleLeft(t), t);
       if (i === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     }
     for (let i = 40; i >= 0; i--) {
       const t = i / 40;
-      const p = this.point(this.fairwayEdge(t, 1), t);
+      const p = this.point(this.fairwayEdge(t, 1) + wobbleRight(t), t);
       ctx.lineTo(p.x, p.y);
     }
     ctx.closePath();
@@ -234,13 +254,37 @@ export class HoleView {
     }
   }
 
+  // A raised deck, not just a patch of the fairway it sits on — a shadow to
+  // lift it off the ground, a rounded platform, and markers for tee it up.
   drawTee() {
     const { ctx } = this;
     const p = this.point(centerX(0, this.hole.features.dogleg), 0);
-    ctx.fillStyle = '#d8e8c8';
-    ctx.fillRect(p.x - 13, p.y - 7, 26, 14);
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-    ctx.strokeRect(p.x - 13, p.y - 7, 26, 14);
+    const hw = 15;
+    const hh = 9;
+    const r = 4;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 3;
+    ctx.beginPath();
+    ctx.roundRect(p.x - hw, p.y - hh, hw * 2, hh * 2, r);
+    ctx.fillStyle = '#e2edd2';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(p.x - hw, p.y - hh, hw * 2, hh * 2, r);
+    ctx.stroke();
+
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(p.x + side * (hw - 3), p.y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#e8503a';
+      ctx.fill();
+    }
   }
 
   drawFlag() {
