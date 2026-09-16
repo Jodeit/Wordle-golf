@@ -2,7 +2,10 @@
 
 import { buildCourse, rateWord, normalizeCode, fairwayHalfWidth } from '../js/course.js';
 import { ANSWERS, ALLOWED, isValidGuess } from '../js/words.js';
-import { scoreGuess, shotFor, knowledgeFrom, scoreEmoji, strokesFromEmoji, BLOWUP_STROKES } from '../js/game.js';
+import {
+  scoreGuess, shotFor, knowledgeFrom, scoreEmoji, strokesFromEmoji, BLOWUP_STROKES,
+  progressFromKnowledge, shotQuality,
+} from '../js/game.js';
 import { buildShareCard, parseShareCard } from '../js/leaderboard.js';
 
 let passed = 0;
@@ -70,6 +73,69 @@ check('every shot advances the ball',
 check('holing out leaves nothing to the pin',
   shots[shots.length - 1].remainingYards === 0 && shots[shots.length - 1].lie === 'hole');
 check('a first shot still covers ground', shots[0].remainingYards < hole.yards);
+
+// ------------------------------------------------- shots match the golf
+
+// A flat 400-yard par 4 to measure drives against.
+const testHole = {
+  number: 1, word: 'wispy', par: 4, yards: 400,
+  features: { fairwayWidth: 0.2, greenSize: 0.09, water: false, dogleg: 0, bunkers: 2, treeSeed: 1 },
+};
+const drive = (word) => {
+  const rs = [{ guess: word, marks: scoreGuess(word, 'wispy') }];
+  return shotFor({ hole: testHole, rows: rs, index: 0, solved: word === 'wispy' });
+};
+
+// The old model floored every drive at 62% of the hole regardless of what it
+// told you, so a guess that hit nothing still looked like a good drive.
+const blank = drive('bludg');        // no letters at all
+const threeGreens = drive('fishy');  // three in position
+check('a drive that hits nothing is a pop-up',
+  400 - blank.remainingYards < 150, `carried ${400 - blank.remainingYards}y`);
+check('a drive that hits nothing is not struck well',
+  blank.quality === 'duff' || blank.quality === 'poor', `rated ${blank.quality}`);
+check('three greens off the tee is a real drive',
+  400 - threeGreens.remainingYards >= 280, `carried ${400 - threeGreens.remainingYards}y`);
+check('three greens leaves a short approach',
+  threeGreens.remainingYards <= 130, `${threeGreens.remainingYards}y left`);
+check('a struck drive outruns a pop-up by a distance',
+  (400 - threeGreens.remainingYards) - (400 - blank.remainingYards) > 150);
+
+// A swing that teaches you nothing is a bad swing, wherever you are lying.
+const wasted = (() => {
+  const rs = [
+    { guess: 'stare', marks: scoreGuess('stare', 'wispy') },
+    { guess: 'cloud', marks: scoreGuess('cloud', 'wispy') },
+  ];
+  return shotFor({ hole: testHole, rows: rs, index: 1, solved: false });
+})();
+check('a guess that adds nothing is a poor shot',
+  wasted.quality === 'duff' || wasted.quality === 'poor', `rated ${wasted.quality}`);
+check('a guess that adds nothing barely advances the ball',
+  (wasted.remainingYards - threeGreens.remainingYards) > 80);
+
+// Eliminating letters helps, but it cannot carry you up the fairway on its own.
+const greyOnly = knowledgeFrom([
+  { guess: 'bludg', marks: scoreGuess('bludg', 'wispy') },
+  { guess: 'kerch', marks: scoreGuess('kerch', 'wispy') },
+  { guess: 'ontfm', marks: scoreGuess('ontfm', 'wispy') },
+]);
+check('greys alone never reach the green', progressFromKnowledge(greyOnly) < 0.5,
+  `progress ${progressFromKnowledge(greyOnly).toFixed(2)}`);
+
+check('knowing more never shortens the hole less',
+  [0, 0.2, 0.4, 0.6, 0.8, 0.95].every((k, i, arr) =>
+    i === 0 || progressFromKnowledge(k) > progressFromKnowledge(arr[i - 1])));
+check('only holing out gets you to the cup', progressFromKnowledge(0.95) < 1);
+
+// The same absolute gain means different things early and late: a tenth of the
+// word is a wasted swing off the tee and a great one when little is left.
+const RANK = { duff: 0, poor: 1, ok: 2, solid: 3, pure: 4 };
+check('quality is judged against what was left to learn',
+  RANK[shotQuality(0.1, 0)] < RANK[shotQuality(0.1, 0.8)],
+  `${shotQuality(0.1, 0)} early vs ${shotQuality(0.1, 0.8)} late`);
+check('a swing that teaches nothing is always a duff',
+  shotQuality(0, 0) === 'duff' && shotQuality(0.005, 0.7) === 'duff');
 check('knowledge only grows',
   rows.every((_, i) => i === 0 || knowledgeFrom(rows.slice(0, i + 1)) >= knowledgeFrom(rows.slice(0, i))));
 

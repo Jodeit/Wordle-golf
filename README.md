@@ -49,11 +49,29 @@ the game panel leaves a band of very different heights on a phone versus a
 desktop. Light tracks the round: the first hole is played at dawn, the turn
 at midday, the ninth into a low sun.
 
-Each guess plays as a shot. Greens count double, yellows count half — the
-more the board lights up, the closer to the pin you finish. A drive that
-catches two letters is a decent poke down the middle; one that catches three
-leaves you a wedge. Spray a guess full of dead letters and you'll find the
-rough, the sand, or the trees.
+### How a guess becomes a shot
+
+Two separate questions, because they are separate in golf too.
+
+**Where the ball ends up** comes from everything you now know, not from how
+many swings you have taken. A green is a placed letter and counts double a
+floating one; greys genuinely help, but eliminating is not advancing, so they
+are capped at a small share. On a 400-yard par 4:
+
+| Your guess | Carry | Left |
+| --- | --- | --- |
+| Nothing but greys | ~90 yds | 310 — a pop-up |
+| Two floating letters | ~170 yds | 230 — a mediocre drive |
+| Three greens | ~300 yds | 100 — striped it, par is yours to lose |
+| Four greens | ~350 yds | 50 — flicking a wedge |
+
+**How the shot was struck** comes from what *this* swing added, measured
+against how much was left to find out. So the same gain is a wasted swing off
+the tee and a great one when you are nearly there. A guess that teaches you
+nothing is a shank even when you are sitting in the middle of the fairway,
+and a guess that cracks the word open from a bad lie is a heroic recovery.
+
+Solve it and the ball is in the cup, wherever it was lying.
 
 Shots are seeded per hole and per guess, so replaying a round redraws it
 exactly the same way.
