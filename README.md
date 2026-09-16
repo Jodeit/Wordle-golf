@@ -15,8 +15,11 @@ No build step, no dependencies, no server. Open `index.html` and play.
 - Guess the word. Each guess is one stroke.
 - Solve it in fewer strokes than par for a birdie or better.
 - There is no failing a hole. Golf has no "you lose" — you keep swinging until
-  the ball drops and card whatever it cost, so the board grows past six rows
-  and a grind-out is simply a seven.
+  the ball drops and card whatever it cost, so a grind-out is simply a seven.
+- The board opens at **par**, not at a fixed six rows: the rows in front of you
+  are the strokes you are playing for. Go past par and it grows a row at a
+  time, marked in dashed red, and the extra room goes to the course — a par 3
+  shows half again as much fairway as a fixed board did.
 - Nine holes make a round. Par is always 36, so cards from different courses
   are still comparable.
 

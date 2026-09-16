@@ -87,9 +87,12 @@ function renderGrid() {
   const rows = holeState().rows;
   grid.innerHTML = '';
 
-  // Six rows to start, then one more each time you need it. There is no
-  // failing a hole, so the board grows rather than shutting you out.
-  const rowCount = Math.min(HARD_LIMIT, Math.max(6, rows.length + 1));
+  // The board opens at par and grows a row at a time. Six empty rows used to
+  // say "six tries"; with no limit that means nothing, while par is the number
+  // actually worth looking at — so the grid shows the target and the rows you
+  // spend beyond it.
+  const par = holeSpec().par;
+  const rowCount = Math.min(HARD_LIMIT, Math.max(par, rows.length + 1));
   grid.style.gridTemplateRows = `repeat(${rowCount}, 1fr)`;
   grid.classList.toggle('grid-tall', rowCount > 6);
   grid.classList.toggle('grid-taller', rowCount > 8);
@@ -97,6 +100,7 @@ function renderGrid() {
   for (let r = 0; r < rowCount; r++) {
     const rowEl = document.createElement('div');
     rowEl.className = 'grid-row';
+    if (r >= par) rowEl.classList.add('over-par');
     rowEl.dataset.row = String(r);
 
     const row = rows[r];
@@ -240,6 +244,7 @@ function submitGuess() {
 
   renderGrid();
   renderKeyboard();
+  requestAnimationFrame(layoutScene);
 
   state.locked = true;
   $('shot-label').textContent = shot.label;

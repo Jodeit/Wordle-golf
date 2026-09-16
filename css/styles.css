@@ -274,6 +274,12 @@ main {
 .tile.present { color: #fff; background: var(--yellow); border-color: var(--yellow); }
 .tile.absent { color: rgba(255, 255, 255, 0.55); background: rgba(0, 0, 0, 0.4); border-color: transparent; }
 
+/* Rows past par: the strokes you did not want to need. */
+.grid-row.over-par .tile:not(.correct):not(.present):not(.absent) {
+  border-color: rgba(224, 122, 99, 0.3);
+  border-style: dashed;
+}
+
 .grid-row.shake { animation: shake 400ms ease; }
 
 @keyframes pop { from { transform: scale(0.9); } to { transform: scale(1); } }
