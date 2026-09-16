@@ -1,0 +1,465 @@
+/* Wordle Golf — dark, phone-first. Most rounds get played one-handed in a
+   group chat argument, so the grid and keyboard own the bottom of the screen. */
+
+:root {
+  --bg: #0f1a12;
+  --panel: #16251a;
+  --panel-2: #1d3023;
+  --line: #2b4632;
+  --text: #eaf3ec;
+  --dim: #9bb3a2;
+  --green: #5aa85f;
+  --yellow: #c9b458;
+  --grey: #3a4a3e;
+  --accent: #ffd24a;
+  --bad: #c96a5a;
+  --radius: 12px;
+  --font: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ------------------------------------------------------------- top bar */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.course-id { min-width: 0; }
+
+.course-id h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.code-chip {
+  margin-top: 2px;
+  padding: 1px 7px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  background: rgba(255, 210, 74, 0.12);
+  border: 1px solid rgba(255, 210, 74, 0.3);
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.topbar-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.icon-btn:active { transform: scale(0.94); }
+
+/* --------------------------------------------------------------- layout */
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 6px;
+  padding: 6px 8px 8px;
+}
+
+.hole-panel { display: flex; flex-direction: column; min-height: 0; gap: 4px; }
+
+.hole-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.hole-meta strong { color: var(--text); font-size: 14px; }
+.hole-meta .dim { color: var(--dim); }
+.hole-meta .total {
+  margin-left: auto;
+  padding: 2px 9px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(255, 210, 74, 0.1);
+  border-radius: 20px;
+}
+
+.map-wrap { display: flex; flex-direction: column; flex: 1; min-height: 120px; }
+
+.map-wrap #hole-map { flex: 1; min-height: 0; }
+
+#hole-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.shot-label {
+  padding: 5px 9px;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.hole-notes {
+  margin: 0;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--dim);
+  text-align: center;
+}
+
+.play-panel { display: flex; flex-direction: column; gap: 5px; }
+
+/* ----------------------------------------------------------------- grid */
+
+.grid {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 4px;
+  justify-content: center;
+}
+
+.grid-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+
+.tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  font-size: 19px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 2px solid var(--grey);
+  border-radius: 4px;
+}
+
+.tile.filled { border-color: #55705c; animation: pop 90ms ease-out; }
+.tile.correct { color: #fff; background: var(--green); border-color: var(--green); }
+.tile.present { color: #fff; background: var(--yellow); border-color: var(--yellow); }
+.tile.absent { color: #fff; background: var(--grey); border-color: var(--grey); }
+
+.grid-row.shake { animation: shake 400ms ease; }
+
+@keyframes pop { from { transform: scale(0.9); } to { transform: scale(1); } }
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+.message {
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------- keyboard */
+
+.keyboard { display: flex; flex-direction: column; gap: 5px; }
+.kb-row { display: flex; justify-content: center; gap: 4px; }
+
+.key {
+  flex: 1;
+  max-width: 40px;
+  height: 46px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text);
+  background: #43584a;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.key.wide { max-width: 62px; font-size: 11px; }
+.key:active { transform: translateY(1px); }
+.key.correct { background: var(--green); }
+.key.present { background: var(--yellow); }
+.key.absent { background: #26332a; color: #6e8375; }
+
+/* ----------------------------------------------------------- scorecard */
+
+.scorecard-strip { overflow-x: auto; }
+
+.scorecard {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(30px, 1fr);
+  gap: 3px;
+  min-width: 100%;
+}
+
+.sc-hole {
+  padding: 3px 0;
+  font-size: 10px;
+  text-align: center;
+  color: var(--dim);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.sc-hole .sc-score {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sc-hole.current { border-color: var(--accent); }
+.sc-hole.under .sc-score { color: #7ee08a; }
+.sc-hole.over .sc-score { color: var(--bad); }
+
+/* -------------------------------------------------------------- modals */
+
+.modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-root[hidden] { display: none; }
+
+.modal-backdrop { position: absolute; inset: 0; background: rgba(4, 10, 6, 0.72); }
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: rise 220ms ease-out;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.modal h2 { margin: 0 0 8px; font-size: 20px; }
+.lede { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(--dim); }
+.lede em { color: var(--accent); font-style: normal; }
+
+.field { display: block; margin-bottom: 12px; }
+.field span { display: block; margin-bottom: 4px; font-size: 12px; color: var(--dim); }
+
+input[type='text'], textarea {
+  width: 100%;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+input[type='text']:focus, textarea:focus { outline: 2px solid var(--accent); }
+
+.course-preview {
+  padding: 12px;
+  margin-bottom: 14px;
+  text-align: center;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.preview-name { font-size: 15px; font-weight: 700; }
+.preview-meta { margin-top: 3px; font-size: 12px; color: var(--dim); }
+.preview-meta span:first-child { font-family: ui-monospace, Menlo, monospace; color: var(--accent); }
+
+.row-buttons { display: flex; gap: 8px; }
+
+button.primary, button.ghost {
+  flex: 1;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button.primary { color: #10250f; background: var(--accent); border: 0; }
+button.ghost { color: var(--text); background: transparent; border: 1px solid var(--line); }
+button.primary:active, button.ghost:active { transform: translateY(1px); }
+
+.joiner, .importer { margin-top: 14px; font-size: 13px; color: var(--dim); }
+.joiner summary, .importer summary { cursor: pointer; padding: 6px 0; }
+.field-row { display: flex; gap: 8px; margin-top: 8px; }
+.field-row input { flex: 1; text-transform: uppercase; letter-spacing: 2px; }
+.field-row button { flex: 0 0 auto; padding: 10px 16px; }
+.hint { font-size: 12px; line-height: 1.45; }
+.import-msg { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.importer textarea { margin-bottom: 8px; }
+
+/* --------------------------------------------------------- hole result */
+
+.hole-result { text-align: center; }
+.result-score { font-size: 28px; font-weight: 800; letter-spacing: 0.5px; }
+.result-word {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.result-line { margin-top: 6px; font-size: 13px; color: var(--dim); }
+.result-card { margin: 16px 0; font-size: 13px; color: var(--dim); text-align: center; }
+
+.round-summary { margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
+.round-summary .big { font-size: 30px; font-weight: 800; color: var(--accent); }
+
+.share-card {
+  padding: 12px;
+  margin: 0 0 14px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.board-course { margin-bottom: 10px; font-size: 12px; color: var(--dim); }
+.board-list { margin: 0; padding-left: 22px; }
+.board-list li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.board-list .bl-row { display: flex; justify-content: space-between; gap: 10px; }
+.board-list .bl-name { font-weight: 600; }
+.board-list .bl-score { font-variant-numeric: tabular-nums; color: var(--accent); }
+.board-list .bl-marks { font-size: 11px; letter-spacing: 1px; }
+.board-empty { font-size: 13px; color: var(--dim); }
+
+.help-list { padding-left: 18px; font-size: 13px; line-height: 1.6; color: var(--dim); }
+.help-list strong { color: var(--text); }
+.modal p { font-size: 13px; line-height: 1.55; color: var(--dim); }
+
+/* ------------------------------------------------------------ fx layer */
+
+#fx-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.fx-banner {
+  position: fixed;
+  top: 32%;
+  left: 50%;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 28px;
+  text-align: center;
+  border-radius: 16px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: banner-in 420ms cubic-bezier(0.18, 1.4, 0.4, 1);
+}
+
+.fx-banner strong { font-size: 30px; font-weight: 800; letter-spacing: 1px; }
+.fx-banner span { font-size: 13px; opacity: 0.85; }
+.fx-banner.fx-great { color: #10250f; background: var(--accent); }
+.fx-banner.fx-good { color: #fff; background: var(--green); }
+.fx-banner.fx-even { color: var(--text); background: var(--panel-2); border: 1px solid var(--line); }
+.fx-banner.fx-bad { color: #fff; background: #5d6f7d; }
+.fx-banner.fx-awful { color: #fff; background: #6b3f3f; }
+.fx-banner.fx-out { opacity: 0; transition: opacity 400ms ease, transform 400ms ease; transform: translate(-50%, -70%); }
+
+@keyframes banner-in {
+  from { opacity: 0; transform: translate(-50%, -30%) scale(0.7); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Bogeys make the whole board sag for a beat. */
+.mourn { animation: mourn 900ms ease; }
+@keyframes mourn {
+  30% { transform: translateY(6px) rotate(-0.4deg); filter: saturate(0.6); }
+  100% { transform: none; }
+}
+
+/* ------------------------------------------------- bigger screens */
+
+@media (min-width: 720px) and (min-height: 620px) {
+  main {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: 1fr auto;
+    gap: 12px;
+    padding: 12px;
+  }
+  .hole-panel { grid-row: 1 / 3; }
+  .play-panel { justify-content: center; }
+  .scorecard-strip { grid-column: 2; }
+  .tile { width: 46px; height: 46px; font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

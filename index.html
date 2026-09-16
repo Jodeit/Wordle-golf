@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Wordle Golf</title>
+<meta name="description" content="Nine holes of Wordle. Every word is a golf hole with a par — double letters play long, opener-friendly words play short." />
+<meta name="theme-color" content="#14361d" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛳</text></svg>" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="course-id">
+    <h1 id="course-name">Wordle Golf</h1>
+    <button id="course-code" class="code-chip" title="Copy course code">—</button>
+  </div>
+  <div class="topbar-actions">
+    <button id="btn-board" class="icon-btn" title="Leaderboard">🏆</button>
+    <button id="btn-help" class="icon-btn" title="How to play">?</button>
+    <button id="btn-menu" class="icon-btn" title="New course">⛳</button>
+  </div>
+</header>
+
+<main id="game" hidden>
+  <section class="hole-panel">
+    <div class="hole-meta">
+      <span class="hole-number">Hole <strong id="hole-number">1</strong><span class="dim">/9</span></span>
+      <span class="hole-stat">Par <strong id="hole-par">4</strong></span>
+      <span class="hole-stat"><strong id="hole-yards">400</strong> yds</span>
+      <span class="hole-stat total" id="round-total">E</span>
+    </div>
+    <div class="map-wrap">
+      <canvas id="hole-map" aria-label="Overhead view of the hole"></canvas>
+      <div id="shot-label" class="shot-label">On the tee.</div>
+    </div>
+    <p id="hole-notes" class="hole-notes"></p>
+  </section>
+
+  <section class="play-panel">
+    <div id="grid" class="grid" role="grid" aria-label="Guesses"></div>
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+    <div id="keyboard" class="keyboard"></div>
+  </section>
+
+  <section class="scorecard-strip">
+    <div id="scorecard" class="scorecard"></div>
+  </section>
+</main>
+
+<!-- ------------------------------------------------------------ dialogs -->
+
+<div id="modal-root" class="modal-root" hidden>
+  <div class="modal-backdrop" data-close></div>
+
+  <div id="modal-start" class="modal" hidden>
+    <h2>⛳ Wordle Golf</h2>
+    <p class="lede">Nine words. Nine holes. Every word gets a par — double letters
+      play long, words full of <em>STARE</em> and <em>LEARN</em> letters play short.</p>
+    <label class="field">
+      <span>Your name</span>
+      <input id="input-name" type="text" maxlength="20" placeholder="Jo" autocomplete="nickname" />
+    </label>
+    <div class="course-preview">
+      <div class="preview-name" id="preview-name">—</div>
+      <div class="preview-meta"><span id="preview-code">—</span> · Par <span id="preview-par">36</span> · <span id="preview-yards">0</span> yds</div>
+    </div>
+    <div class="row-buttons">
+      <button id="btn-reroll" class="ghost">🎲 Another course</button>
+      <button id="btn-play" class="primary">Play the front nine</button>
+    </div>
+    <details class="joiner">
+      <summary>Join a friend's course</summary>
+      <div class="field-row">
+        <input id="input-code" type="text" maxlength="8" placeholder="Course code" />
+        <button id="btn-join" class="ghost">Join</button>
+      </div>
+    </details>
+  </div>
+
+  <div id="modal-hole" class="modal" hidden>
+    <div class="hole-result">
+      <div id="result-score" class="result-score">Par</div>
+      <div id="result-word" class="result-word"></div>
+      <div id="result-line" class="result-line"></div>
+    </div>
+    <div id="result-card" class="result-card"></div>
+    <button id="btn-next" class="primary">Next tee →</button>
+  </div>
+
+  <div id="modal-round" class="modal" hidden>
+    <h2 id="round-title">Round complete</h2>
+    <div id="round-summary" class="round-summary"></div>
+    <pre id="share-card" class="share-card"></pre>
+    <div class="row-buttons">
+      <button id="btn-copy" class="primary">Copy share card</button>
+      <button id="btn-again" class="ghost">New course</button>
+    </div>
+  </div>
+
+  <div id="modal-board" class="modal" hidden>
+    <h2>🏆 Leaderboard</h2>
+    <div class="board-course" id="board-course">—</div>
+    <ol id="board-list" class="board-list"></ol>
+    <details class="importer">
+      <summary>Add a friend's score</summary>
+      <p class="hint">Paste the share card they sent you. Their round joins this
+        course's board — the code tells us the pars, so the strokes are real.</p>
+      <textarea id="input-import" rows="5" placeholder="⛳ Wordle Golf — ..."></textarea>
+      <button id="btn-import" class="ghost">Add to board</button>
+      <div id="import-msg" class="import-msg"></div>
+    </details>
+  </div>
+
+  <div id="modal-help" class="modal" hidden>
+    <h2>How to play</h2>
+    <p>Each hole is a five-letter word. Guess it in as few swings as you can —
+      <strong>your guesses are your strokes</strong>.</p>
+    <ul class="help-list">
+      <li><strong>Par 3</strong> — friendly letters. A standard opener lights it up.</li>
+      <li><strong>Par 4</strong> — honest golf. Most words live here.</li>
+      <li><strong>Par 5</strong> — double letters, or letters no opener ever tests.</li>
+      <li>Fail to solve in six and you take a lost ball: <strong>8 strokes</strong>.</li>
+    </ul>
+    <p>The map plots each guess as a shot. The more the board lights up, the
+      closer to the pin you finish — greens count double, yellows count half.</p>
+    <p>Nine holes make a round. Same course code, same nine words, so you and
+      your friends can play the exact same track.</p>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
