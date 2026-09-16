@@ -485,6 +485,39 @@ export class PerspectiveView {
     ctx.fill();
   }
 
+  // Screen-space bounds of a projected shape, for building a gradient over it.
+  shapeBounds(points) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of points) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+    return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, r: Math.max(maxX - minX, maxY - minY) / 2 };
+  }
+
+  // Same outline as fillGroundShape, but shaded core-to-rim so a flat disc
+  // reads as a mound or a hollow instead of a paint swatch. The highlight
+  // sits up-and-left of centre, roughly where the sun keyframes put the light.
+  fillGroundShapeShaded(points, core, rim) {
+    if (points.length < 3) return;
+    const { ctx } = this;
+    const { cx, cy, r } = this.shapeBounds(points);
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (const pt of points) ctx.lineTo(pt.x, pt.y);
+    ctx.closePath();
+    const grad = ctx.createRadialGradient(
+      cx - r * 0.3, cy - r * 0.35, Math.max(1, r * 0.12),
+      cx, cy, Math.max(2, r),
+    );
+    grad.addColorStop(0, core);
+    grad.addColorStop(1, rim);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
   drawBunker(bunker) {
     // A bunker level with the player spreads across the whole frame as a slab
     // of sand. Anything that close is beside you, not ahead of you.
@@ -493,7 +526,10 @@ export class PerspectiveView {
     const pts = this.groundCircle(bunker.x, bunker.z, bunker.rx, bunker.rz);
     if (!pts.length) return;
     const fade = this.haze(pts[0].depth);
-    this.fillGroundShape(pts, mixHex('#e6d3a3', this.palette.skyHaze, fade));
+    // Bright where the sand catches the light, darker toward the lip.
+    const core = mixHex('#f3e4bb', this.palette.skyHaze, fade);
+    const rim = mixHex('#c7a968', this.palette.skyHaze, fade);
+    this.fillGroundShapeShaded(pts, core, rim);
   }
 
   drawWater() {
@@ -513,7 +549,10 @@ export class PerspectiveView {
     const pts = this.groundCircle(this.centerAt(pinZ), pinZ, r, r * 0.8);
     if (!pts.length) return;
     const fade = this.haze(pts[0].depth);
-    this.fillGroundShape(pts, mixHex('#7fcf75', this.palette.skyHaze, fade * 0.8));
+    // Lighter, close-mown centre swelling up to a darker collar at the edge.
+    const core = mixHex('#96e187', this.palette.skyHaze, fade * 0.8);
+    const rim = mixHex('#5fa858', this.palette.skyHaze, fade * 0.8);
+    this.fillGroundShapeShaded(pts, core, rim);
   }
 
   drawFlag() {
