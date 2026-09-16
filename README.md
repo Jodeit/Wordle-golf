@@ -120,3 +120,16 @@ everywhere too.
   ranks words sensibly, but it isn't calibrated against real play data.
 - Leaderboards and in-progress rounds live in `localStorage` — they're
   per-browser, and private windows won't keep them.
+
+## Hosting
+
+It's a static site with no build step, so GitHub Pages can serve the
+repository root as-is — no Actions workflow needed. In **Settings → Pages**,
+set the source to *Deploy from a branch*, pick the branch, and choose
+`/ (root)`.
+
+`.nojekyll` is there to stop Pages running the files through Jekyll.
+
+Project sites are served from a subpath (`https://<user>.github.io/Wordle-golf/`)
+rather than the domain root. Every asset path is relative and share links are
+built from `window.location`, so course links keep working under the subpath.
