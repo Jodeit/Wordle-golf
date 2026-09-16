@@ -330,6 +330,8 @@ function shotLabel({ index, lie, quality, remainingYards, solved, hole, previous
   if (lie === 'rough') return `In the thick stuff — ${distance}.`;
   if (quality === 'pure') return `Flushed it — ${distance}.`;
   if (quality === 'poor') return `Advanced it, not much more — ${distance}.`;
+  // "Back" only reads right if you were somewhere else to begin with.
+  if (previousLie === 'fairway') return `Still finding the fairway — ${distance}.`;
   return `Back on the short grass — ${distance}.`;
 }
 
