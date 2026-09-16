@@ -53,17 +53,26 @@ at midday, the ninth into a low sun.
 
 Two separate questions, because they are separate in golf too.
 
-**Where the ball ends up** comes from everything you now know, not from how
-many swings you have taken. A green is a placed letter and counts double a
-floating one; greys genuinely help, but eliminating is not advancing, so they
-are capped at a small share. On a 400-yard par 4:
+**Where the ball ends up** is how much is still unknown — literally, how many
+answers are still possible. Counting greens cannot tell a constraining three
+greens from a loose one: `-ONE-` leaves one word and is a tap-in, while three
+greens elsewhere can leave fifty and a long approach. Greys need no special
+weighting either; eliminating letters shrinks the field by exactly as much as
+it actually helps. On a 400-yard par 4:
 
-| Your guess | Carry | Left |
+| Answers still possible | Carry | Left |
 | --- | --- | --- |
-| Nothing but greys | ~90 yds | 310 — a pop-up |
-| Two floating letters | ~170 yds | 230 — a mediocre drive |
-| Three greens | ~300 yds | 100 — striped it, par is yours to lose |
-| Four greens | ~350 yds | 50 — flicking a wedge |
+| ~350 | ~120 yds | 280 — a pop-up |
+| ~90 | ~195 yds | 205 — a mediocre drive |
+| ~30 | ~250 yds | 150 — down the middle |
+| ~6 | ~320 yds | 80 — a wedge to the flag |
+| 1 | ~398 yds | 2 — you know it; tap it in |
+
+Candidates are counted over the **answer** pool, not the guess list. You can
+guess `GONER`; the game will never choose it. That means the model sometimes
+knows you are down to one word while you are still weighing two or three
+plausible ones — it is measuring the strength of your position, not your
+confidence. The in-game help says as much, so it is information you have too.
 
 **How the shot was struck** comes from what *this* swing added, measured
 against how much was left to find out. So the same gain is a wasted swing off

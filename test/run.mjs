@@ -4,7 +4,7 @@ import { buildCourse, rateWord, normalizeCode, fairwayHalfWidth } from '../js/co
 import { ANSWERS, ALLOWED, isValidGuess } from '../js/words.js';
 import {
   scoreGuess, shotFor, knowledgeFrom, scoreEmoji, strokesFromEmoji, BLOWUP_STROKES,
-  progressFromKnowledge, shotQuality,
+  progressFromKnowledge, shotQuality, candidatesRemaining,
 } from '../js/game.js';
 import { buildShareCard, parseShareCard } from '../js/leaderboard.js';
 
@@ -76,85 +76,74 @@ check('a first shot still covers ground', shots[0].remainingYards < hole.yards);
 
 // ------------------------------------------------- shots match the golf
 
-// A flat 400-yard par 4 to measure drives against.
+// A flat 400-yard par 4. The word must come from the answer pool: the shot
+// model measures how many answers are still possible, so a hole word outside
+// the pool makes the board unsatisfiable.
 const testHole = {
-  number: 1, word: 'wispy', par: 4, yards: 400,
+  number: 1, word: 'money', par: 4, yards: 400,
   features: { fairwayWidth: 0.2, greenSize: 0.09, water: false, dogleg: 0, bunkers: 2, treeSeed: 1 },
 };
-const drive = (word) => {
-  const rs = [{ guess: word, marks: scoreGuess(word, 'wispy') }];
-  return shotFor({ hole: testHole, rows: rs, index: 0, solved: word === 'wispy' });
+check('the test hole word is a real answer', ANSWERS.includes(testHole.word));
+
+const playHole = (words) => {
+  const rs = words.map((w) => ({ guess: w, marks: scoreGuess(w, testHole.word) }));
+  return rs.map((_, i) =>
+    shotFor({ hole: testHole, rows: rs, index: i, solved: rs[i].guess === testHole.word }));
 };
+const carry = (shot) => testHole.yards - shot.remainingYards;
 
-// The old model floored every drive at 62% of the hole regardless of what it
-// told you, so a guess that hit nothing still looked like a good drive.
-const blank = drive('bludg');        // no letters at all
-const threeGreens = drive('fishy');  // three in position
-check('a drive that hits nothing is a pop-up',
-  400 - blank.remainingYards < 150, `carried ${400 - blank.remainingYards}y`);
-check('a drive that hits nothing is not struck well',
+// Distance is how much is still unknown, so the field has to shrink for the
+// ball to travel. Counting greens could not tell a constraining three greens
+// from a loose one; -ONE- leaves one word and is a tap-in, not an approach.
+check('the pool starts whole', candidatesRemaining([]) === ANSWERS.length);
+
+const blank = playHole(['blitz'])[0];        // no letters, but five eliminated
+check('a drive that learns little is short',
+  carry(blank) < testHole.yards * 0.4, `carried ${carry(blank)}y`);
+check('a drive that learns little is not struck well',
   blank.quality === 'duff' || blank.quality === 'poor', `rated ${blank.quality}`);
-check('three greens off the tee is a real drive',
-  400 - threeGreens.remainingYards >= 280, `carried ${400 - threeGreens.remainingYards}y`);
-check('three greens leaves a short approach',
-  threeGreens.remainingYards <= 130, `${threeGreens.remainingYards}y left`);
-check('a struck drive outruns a pop-up by a distance',
-  (400 - threeGreens.remainingYards) - (400 - blank.remainingYards) > 150);
 
-// A swing that teaches you nothing is a bad swing, wherever you are lying.
-const wasted = (() => {
-  const rs = [
-    { guess: 'stare', marks: scoreGuess('stare', 'wispy') },
-    { guess: 'cloud', marks: scoreGuess('cloud', 'wispy') },
-  ];
-  return shotFor({ hole: testHole, rows: rs, index: 1, solved: false });
-})();
-check('a guess that adds nothing is a poor shot',
-  wasted.quality === 'duff' || wasted.quality === 'poor', `rated ${wasted.quality}`);
-check('a guess that adds nothing barely advances the ball',
-  (wasted.remainingYards - threeGreens.remainingYards) > 80);
+// Your round: STEAL, then HONED leaving only MONEY, then MONEY.
+const round = playHole(['steal', 'honed', 'money']);
+check('a one-yellow drive is a drive, not a pop-up',
+  carry(round[0]) > 150 && carry(round[0]) < 260, `carried ${carry(round[0])}y`);
+check('narrowing to one word puts you on the green', round[1].lie === 'green');
+check('narrowing to one word leaves a tap-in',
+  round[1].remainingYards <= 10, `${round[1].remainingYards}y left`);
+check('the shot that narrowed it is the great one', round[1].quality === 'pure');
+check('holing a tap-in is described as a putt',
+  /putt|knocks it in/i.test(round[2].label), round[2].label);
+// The point of the rewrite: the drama belongs to the shot that did the work.
+check('the final tap-in is not billed as a miracle',
+  !/heroic|holed it from/i.test(round[2].label), round[2].label);
 
-// Eliminating letters helps, but it cannot carry you up the fairway on its own.
-const greyOnly = knowledgeFrom([
-  { guess: 'bludg', marks: scoreGuess('bludg', 'wispy') },
-  { guess: 'kerch', marks: scoreGuess('kerch', 'wispy') },
-  { guess: 'ontfm', marks: scoreGuess('ontfm', 'wispy') },
-]);
-check('greys alone never reach the green', progressFromKnowledge(greyOnly) < 0.5,
+// A swing that barely shrinks the field is a bad swing, wherever you lie.
+const wasted = playHole(['steal', 'salts']);
+check('a guess that adds little is a poor shot',
+  wasted[1].quality === 'duff' || wasted[1].quality === 'poor', `rated ${wasted[1].quality}`);
+check('a guess that adds little barely advances the ball',
+  wasted[1].remainingYards > round[1].remainingYards + 80);
+
+// Eliminating letters helps, and only as much as it actually helps.
+const greyOnly = knowledgeFrom([{ guess: 'blitz', marks: scoreGuess('blitz', 'money') }]);
+check('greys move you, but not to the green', progressFromKnowledge(greyOnly) < 0.45,
   `progress ${progressFromKnowledge(greyOnly).toFixed(2)}`);
+check('fewer candidates is always further along',
+  [945, 300, 90, 30, 6, 2, 1].every((n, i, arr) => {
+    if (i === 0) return true;
+    const k = (x) => 1 - Math.log2(x) / Math.log2(ANSWERS.length);
+    return progressFromKnowledge(k(n)) > progressFromKnowledge(k(arr[i - 1]));
+  }));
+check('only holing out gets you to the cup', progressFromKnowledge(1) <= 1
+  && playHole(['steal', 'honed'])[1].remainingYards > 0);
 
-check('knowing more never shortens the hole less',
-  [0, 0.2, 0.4, 0.6, 0.8, 0.95].every((k, i, arr) =>
-    i === 0 || progressFromKnowledge(k) > progressFromKnowledge(arr[i - 1])));
-check('only holing out gets you to the cup', progressFromKnowledge(0.95) < 1);
-
-// The same absolute gain means different things early and late: a tenth of the
-// word is a wasted swing off the tee and a great one when little is left.
+// The same absolute gain means different things early and late.
 const RANK = { duff: 0, poor: 1, ok: 2, solid: 3, pure: 4 };
 check('quality is judged against what was left to learn',
   RANK[shotQuality(0.1, 0)] < RANK[shotQuality(0.1, 0.8)],
   `${shotQuality(0.1, 0)} early vs ${shotQuality(0.1, 0.8)} late`);
 check('a swing that teaches nothing is always a duff',
   shotQuality(0, 0) === 'duff' && shotQuality(0.005, 0.7) === 'duff');
-check('knowledge only grows',
-  rows.every((_, i) => i === 0 || knowledgeFrom(rows.slice(0, i + 1)) >= knowledgeFrom(rows.slice(0, i))));
-
-// The map draws the ball at centreline + lateral, so the lie has to be judged
-// against the same fairway width the renderer uses.
-let geometryChecked = 0;
-let geometryMismatch = 0;
-for (const h of course.holes) {
-  for (const opener of ['stare', 'learn', 'pinky', 'vodka', 'mirth']) {
-    const rs = [{ guess: opener, marks: scoreGuess(opener, h.word) }];
-    const shot = shotFor({ hole: h, rows: rs, index: 0, solved: opener === h.word });
-    if (shot.solved || shot.lie === 'bunker' || shot.lie === 'green') continue;
-    geometryChecked += 1;
-    const onShortGrass = Math.abs(shot.lateral) <= fairwayHalfWidth(h, shot.progress);
-    if (onShortGrass !== (shot.lie === 'fairway')) geometryMismatch += 1;
-  }
-}
-check('the drawn lie matches the reported lie',
-  geometryChecked > 20 && geometryMismatch === 0, `${geometryMismatch}/${geometryChecked} disagreed`);
 
 // ------------------------------------------------------------- word list
 

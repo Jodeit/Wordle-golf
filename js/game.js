@@ -2,6 +2,7 @@
 // each guess into a ball on the overhead map. Pure logic — no DOM in here.
 
 import { makeRng, hashString, fairwayHalfWidth } from './course.js';
+import { ANSWERS } from './words.js';
 
 export const MAX_GUESSES = 6;
 // Walk off without holing out and you are taking a lost-ball penalty.
@@ -33,45 +34,44 @@ export function scoreGuess(guess, answer) {
 
 // ---------------------------------------------------------------- knowledge
 
-// What each kind of feedback is worth. A green is a placed letter and worth
-// double a floating one. Greys genuinely help — five dead letters narrows the
-// field — but only a little: eliminating is not advancing.
-const GREEN_VALUE = 2;
-const YELLOW_VALUE = 1;
-const GREY_VALUE = 0.15;
-const GREY_MAX = 1.5;      // greys alone can never walk you up the fairway
-const KNOWLEDGE_CAP = 0.95; // only holing out puts the ball in the cup
+// How far you are along the hole is how much is still unknown — literally, how
+// many words could still be the answer. Counting greens and yellows cannot tell
+// the difference between three greens that leave a hundred candidates and three
+// that leave one; -ONE- is a tap-in, not a 58-yard approach. Greys need no
+// special weighting either: eliminating letters shrinks the field on its own,
+// by exactly as much as it actually helps.
 
-// How much of the word you have pinned down, 0..1, from all feedback so far.
+const POOL = ANSWERS.length;
+const MAX_BITS = Math.log2(POOL);
+
+// Answers consistent with every piece of feedback so far.
+export function candidatesRemaining(rows) {
+  if (!rows.length) return POOL;
+  const live = ANSWERS.filter((word) =>
+    rows.every((row) => scoreGuess(row.guess, word).join('') === row.marks.join('')));
+  // The hole's word is drawn from this pool, so it is always in there; guard
+  // anyway so an impossible board cannot divide by zero.
+  return Math.max(1, live.length);
+}
+
+// Cache by the exact sequence of guesses and marks: a hole is rebuilt in full
+// on every shot, so the same prefixes get asked for repeatedly.
+const candidateCache = new Map();
+function candidatesCached(rows) {
+  const key = rows.map((r) => `${r.guess}:${r.marks.join('')}`).join('|');
+  let n = candidateCache.get(key);
+  if (n === undefined) {
+    n = candidatesRemaining(rows);
+    if (candidateCache.size > 500) candidateCache.clear();
+    candidateCache.set(key, n);
+  }
+  return n;
+}
+
+// 0 at the tee with the whole pool live, 1 when exactly one word can be right.
 export function knowledgeFrom(rows) {
-  const greenPositions = new Set();
-  const present = new Set();
-  const absent = new Set();
-
-  for (const row of rows) {
-    row.marks.forEach((mark, i) => {
-      const letter = row.guess[i];
-      if (mark === 'correct') greenPositions.add(i);
-      else if (mark === 'present') present.add(letter);
-      else absent.add(letter);
-    });
-  }
-  // A duplicate letter can come back both present and absent; the stronger
-  // signal wins, otherwise it would be counted twice.
-  for (const letter of present) absent.delete(letter);
-  for (const row of rows) {
-    row.marks.forEach((mark, i) => {
-      if (mark === 'correct') absent.delete(row.guess[i]);
-    });
-  }
-
-  const greens = greenPositions.size;
-  const yellows = Math.min(5 - greens, present.size);
-  const value = greens * GREEN_VALUE
-    + yellows * YELLOW_VALUE
-    + Math.min(absent.size * GREY_VALUE, GREY_MAX);
-
-  return Math.min(KNOWLEDGE_CAP, value / 10);
+  const remaining = candidatesCached(rows);
+  return Math.max(0, Math.min(1, 1 - Math.log2(remaining) / MAX_BITS));
 }
 
 // ---------------------------------------------------------------- shot model
@@ -79,17 +79,19 @@ export function knowledgeFrom(rows) {
 // Distance is a function of what you know, not of how many swings you have
 // taken. Calibrated against how a golfer would read the same result:
 //
-//   nothing but greys   -> a pop-up that barely clears the forward tees
-//   two floating letters-> a mediocre drive, still a long way in
-//   three greens        -> 300 down the middle, and par is yours to lose
-//   four greens         -> pin high, flicking a wedge
+//   ~350 words left -> a pop-up that barely clears the forward tees
+//   ~90 words left  -> a mediocre drive, still a long way in
+//   ~30 words left  -> down the middle, a mid-iron in
+//   ~6 words left   -> a wedge to the flag
+//   1 word left     -> you know it; this is a tap-in
 //
-// The old model floored the first shot at 62% of the hole whatever you learned,
-// which made a zero-letter drive look like a good one.
-const DUFF_FLOOR = 0.06;   // even a shank moves the ball a little
-const KNOWLEDGE_CURVE = 0.669;
+// The old model floored the first shot at 62% of the hole whatever it taught
+// you, and before that counted greens, which could not tell a constraining
+// three greens from a loose one.
+const DUFF_FLOOR = 0.03;   // even a shank moves the ball a little
+const KNOWLEDGE_CURVE = 0.75;
 const MIN_ADVANCE = 0.012; // never draw two shots on top of each other
-const MAX_UNSOLVED = 0.985;
+const MAX_UNSOLVED = 0.995; // knowing the word for certain is a tap-in, not a hole-out
 
 export function progressFromKnowledge(knowledge) {
   const k = Math.max(0, Math.min(1, knowledge));
@@ -102,12 +104,12 @@ export function progressFromKnowledge(knowledge) {
 // Judged against how much there was left to find out, so the same absolute
 // gain is a fine strike late on and a wasted swing off the tee.
 export function shotQuality(gain, previousKnowledge = 0) {
-  const headroom = Math.max(0.05, KNOWLEDGE_CAP - previousKnowledge);
+  const headroom = Math.max(0.05, 1 - previousKnowledge);
   const share = gain / headroom;
-  if (share >= 0.45) return 'pure';
-  if (share >= 0.28) return 'solid';
-  if (share >= 0.15) return 'ok';
-  if (share >= 0.09) return 'poor';
+  if (share >= 0.5) return 'pure';
+  if (share >= 0.32) return 'solid';
+  if (share >= 0.2) return 'ok';
+  if (share >= 0.12) return 'poor';
   return 'duff';
 }
 
@@ -199,7 +201,8 @@ function shotLabel({ index, lie, quality, remainingYards, solved, hole, previous
   if (solved) {
     if (index === 0) return 'HOLE IN ONE. Absolute nonsense.';
     if (previousLie === 'green') {
-      return index >= 4 ? 'Putt drops at last. Grinding.' : 'Drains the putt.';
+      if (index >= 4) return 'Putt drops at last. Grinding.';
+      return index === 1 ? 'Knocks it in.' : 'Drains the putt.';
     }
     if (previousLie === 'bunker') return 'Holed it out of the sand!';
     if (previousLie === 'trees') return 'Holed it from the trees. Ridiculous.';
@@ -208,8 +211,10 @@ function shotLabel({ index, lie, quality, remainingYards, solved, hole, previous
 
   const distance = `${remainingYards} yards out`;
 
-  // Off the tee, the strike is the story.
+  // Off the tee, the strike is the story — but check where it finished first,
+  // or a drive good enough to reach the green gets called offline.
   if (index === 0) {
+    if (lie === 'green') return `Drove it onto the green. On a par ${hole.par}!`;
     if (quality === 'duff') return `Pop-up off the tee — ${distance}. Grim.`;
     if (quality === 'poor') return `Thin and short — ${distance}.`;
     if (quality === 'pure') {
@@ -221,7 +226,6 @@ function shotLabel({ index, lie, quality, remainingYards, solved, hole, previous
     if (lie === 'rough') return `Pulled it into the rough — ${distance}.`;
     if (lie === 'bunker') return `Found the fairway bunker — ${distance}.`;
     if (lie === 'water') return `That is wet. Reload — ${distance}.`;
-    if (lie === 'green') return `Driving the green on a par ${hole.par}?!`;
     return `Sprayed into the trees — ${distance}.`;
   }
 
@@ -241,7 +245,8 @@ function shotLabel({ index, lie, quality, remainingYards, solved, hole, previous
   }
 
   if (lie === 'green') {
-    const feet = Math.max(2, Math.round(remainingYards * 3));
+    const feet = Math.max(1, Math.round(remainingYards * 3));
+    if (feet <= 8) return `Stone dead. ${feet === 1 ? 'A foot' : `${feet} feet`} for it.`;
     if (quality === 'pure') return `Stuffed it. ${feet} feet for it.`;
     return `On the green, ${feet} feet for it.`;
   }
