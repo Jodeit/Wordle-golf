@@ -20,6 +20,30 @@
 
 * { box-sizing: border-box; }
 
+/* Kill the double-tap-to-zoom gesture. On iOS a quick second tap on a key
+   zooms the page, which is jarring mid-word. `manipulation` still allows
+   panning and pinch zoom, so unlike user-scalable=no on the viewport this
+   costs nothing in accessibility. It is set here because touch-action is not
+   inherited — a tap landing on a tile would otherwise still zoom. */
+html, body, body * {
+  touch-action: manipulation;
+}
+
+/* A fast tapper should never raise a highlight or the copy/define callout. */
+.key,
+.tile,
+.sc-hole,
+.icon-btn,
+.code-chip,
+.modal-close,
+button.primary,
+button.ghost {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 html, body {
   margin: 0;
   height: 100%;
